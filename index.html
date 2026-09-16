@@ -267,44 +267,19 @@
 
           <!-- Repositórios Recentes -->
           <div class="space-y-2">
-            <p class="text-[10px] font-mono uppercase tracking-widest text-slate-400 px-1 font-semibold">Repositórios Recentes</p>
-            <div class="space-y-1">
+            <div class="flex items-center justify-between px-1">
+              <p class="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-semibold">Repositórios Recentes</p>
               <button
-                onclick="quickAuditPreset('faelscarpato/mrcp-engine'); closeDrawer();"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg text-[#4edea3] bg-[#4edea3]/5 border border-[#4edea3]/20 font-mono truncate text-left"
+                id="mobile-clear-recent-btn"
+                onclick="clearRecentRepos()"
+                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors hidden"
+                title="Limpar histórico recente"
               >
-                <svg class="w-4 h-4 shrink-0 text-[#4edea3]" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-                </svg>
-                <span class="truncate">faelscarpato/mrcp...</span>
+                Limpar
               </button>
-              <button
-                onclick="quickAuditPreset('expressjs/express'); closeDrawer();"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg text-slate-400 hover:text-slate-200 hover:bg-[#0d1c2d] font-mono transition-colors truncate text-left"
-              >
-                <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-                </svg>
-                <span class="truncate">expressjs/express</span>
-              </button>
-              <button
-                onclick="quickAuditPreset('facebook/react'); closeDrawer();"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg text-slate-400 hover:text-slate-200 hover:bg-[#0d1c2d] font-mono transition-colors truncate text-left"
-              >
-                <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-                </svg>
-                <span class="truncate">facebook/react</span>
-              </button>
-              <button
-                onclick="quickAuditPreset('fastapi/fastapi'); closeDrawer();"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg text-slate-400 hover:text-slate-200 hover:bg-[#0d1c2d] font-mono transition-colors truncate text-left"
-              >
-                <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 16 16" fill="currentColor">
-                  <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-                </svg>
-                <span class="truncate">fastapi/fastapi</span>
-              </button>
+            </div>
+            <div id="mobile-recent-repos" class="space-y-1">
+              <!-- Renderizado dinamicamente via localStorage -->
             </div>
           </div>
         </div>
@@ -406,46 +381,21 @@
 
         <!-- Histórico Recente -->
         <div class="pt-2">
-          <div class="px-2 pb-1.5 text-[11px] font-mono font-semibold tracking-wider text-[#bec6e0]/70 uppercase">
-            Repositórios Recentes
+          <div class="flex items-center justify-between px-2 pb-1.5">
+            <div class="text-[11px] font-mono font-semibold tracking-wider text-[#bec6e0]/70 uppercase">
+              Repositórios Recentes
+            </div>
+            <button
+              id="desktop-clear-recent-btn"
+              onclick="clearRecentRepos()"
+              class="text-[10px] text-slate-500 hover:text-red-400 transition-colors hidden"
+              title="Limpar histórico recente"
+            >
+              Limpar
+            </button>
           </div>
-          <div class="space-y-1">
-            <button
-              onclick="quickAuditPreset('faelscarpato/mrcp-engine')"
-              class="w-full text-left px-2.5 py-2 rounded-lg text-xs text-[#bec6e0] hover:text-white hover:bg-[#122131] transition-colors flex items-center space-x-2 truncate group"
-            >
-              <svg class="w-4 h-4 shrink-0 text-[#4edea3]" viewBox="0 0 16 16" fill="currentColor">
-                <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-              </svg>
-              <span class="truncate">faelscarpato/mrcp-engine</span>
-            </button>
-            <button
-              onclick="quickAuditPreset('expressjs/express')"
-              class="w-full text-left px-2.5 py-2 rounded-lg text-xs text-[#bec6e0] hover:text-white hover:bg-[#122131] transition-colors flex items-center space-x-2 truncate group"
-            >
-              <svg class="w-4 h-4 shrink-0 text-[#bec6e0] group-hover:text-[#4edea3] transition-colors" viewBox="0 0 16 16" fill="currentColor">
-                <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-              </svg>
-              <span class="truncate">expressjs/express</span>
-            </button>
-            <button
-              onclick="quickAuditPreset('facebook/react')"
-              class="w-full text-left px-2.5 py-2 rounded-lg text-xs text-[#bec6e0] hover:text-white hover:bg-[#122131] transition-colors flex items-center space-x-2 truncate group"
-            >
-              <svg class="w-4 h-4 shrink-0 text-[#bec6e0] group-hover:text-[#4edea3] transition-colors" viewBox="0 0 16 16" fill="currentColor">
-                <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-              </svg>
-              <span class="truncate">facebook/react</span>
-            </button>
-            <button
-              onclick="quickAuditPreset('fastapi/fastapi')"
-              class="w-full text-left px-2.5 py-2 rounded-lg text-xs text-[#bec6e0] hover:text-white hover:bg-[#122131] transition-colors flex items-center space-x-2 truncate group"
-            >
-              <svg class="w-4 h-4 shrink-0 text-[#bec6e0] group-hover:text-[#4edea3] transition-colors" viewBox="0 0 16 16" fill="currentColor">
-                <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-              </svg>
-              <span class="truncate">fastapi/fastapi</span>
-            </button>
+          <div id="desktop-recent-repos" class="space-y-1">
+            <!-- Renderizado dinamicamente via localStorage -->
           </div>
         </div>
       </div>
@@ -1669,6 +1619,111 @@
         document.getElementById("model-menu").classList.add("hidden");
       }
 
+      // =========================================================
+      // GERENCIAMENTO DE REPOSITÓRIOS RECENTES DO USUÁRIO (LOCALSTORAGE)
+      // =========================================================
+      function getRecentRepos() {
+        try {
+          const raw = localStorage.getItem("mrcp_user_repos");
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveRecentRepo(repoUrl) {
+        if (!repoUrl) return;
+        let clean = repoUrl.replace(/^https?:\/\/github\.com\//i, "").replace(/\/$/, "").trim();
+        clean = clean.replace(/\.git$/, "");
+        if (!clean) return;
+
+        const existing = getRecentRepos().filter((r) => r.toLowerCase() !== clean.toLowerCase());
+        const updated = [clean, ...existing].slice(0, 8);
+        try {
+          localStorage.setItem("mrcp_user_repos", JSON.stringify(updated));
+        } catch (e) {
+          console.warn("Falha ao salvar repositório recente no localStorage:", e);
+        }
+        renderRecentRepos();
+      }
+
+      function removeRecentRepo(repoName, event) {
+        if (event) event.stopPropagation();
+        const existing = getRecentRepos().filter((r) => r.toLowerCase() !== repoName.toLowerCase());
+        try {
+          localStorage.setItem("mrcp_user_repos", JSON.stringify(existing));
+        } catch (e) {}
+        renderRecentRepos();
+      }
+
+      function clearRecentRepos() {
+        try {
+          localStorage.removeItem("mrcp_user_repos");
+        } catch (e) {}
+        renderRecentRepos();
+      }
+
+      function renderRecentRepos() {
+        const repos = getRecentRepos();
+        const desktopContainer = document.getElementById("desktop-recent-repos");
+        const mobileContainer = document.getElementById("mobile-recent-repos");
+        const desktopClearBtn = document.getElementById("desktop-clear-recent-btn");
+        const mobileClearBtn = document.getElementById("mobile-clear-recent-btn");
+
+        if (desktopClearBtn) {
+          if (repos.length > 0) desktopClearBtn.classList.remove("hidden");
+          else desktopClearBtn.classList.add("hidden");
+        }
+        if (mobileClearBtn) {
+          if (repos.length > 0) mobileClearBtn.classList.remove("hidden");
+          else mobileClearBtn.classList.add("hidden");
+        }
+
+        const renderHtml = (isMobile) => {
+          if (repos.length === 0) {
+            return `
+              <div class="px-2.5 py-3 text-center border border-dashed border-[#1a334d] rounded-xl bg-[#071626]/40">
+                <span class="material-symbols-outlined text-[16px] text-slate-500 block mb-0.5">history</span>
+                <p class="text-[11px] text-slate-400 font-medium">Nenhum repositório recente</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Audite um repositório para salvá-lo aqui</p>
+              </div>
+            `;
+          }
+
+          return repos
+            .map((repo) => {
+              const escapedRepo = repo.replace(/'/g, "\\'");
+              return `
+              <div class="group flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-300 hover:text-white hover:bg-[#122131] border border-transparent hover:border-[#1c2b3c] transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onclick="quickAuditPreset('${escapedRepo}'); ${isMobile ? 'closeDrawer();' : ''}"
+                  class="flex items-center gap-2 min-w-0 flex-1 text-left truncate"
+                  title="${repo}"
+                >
+                  <svg class="w-3.5 h-3.5 shrink-0 text-[#4edea3]" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
+                  </svg>
+                  <span class="truncate">${repo}</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="removeRecentRepo('${escapedRepo}', event)"
+                  class="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 p-0.5 rounded transition-all shrink-0"
+                  title="Remover"
+                >
+                  <span class="material-symbols-outlined text-[13px]">close</span>
+                </button>
+              </div>
+            `;
+            })
+            .join("");
+        };
+
+        if (desktopContainer) desktopContainer.innerHTML = renderHtml(false);
+        if (mobileContainer) mobileContainer.innerHTML = renderHtml(true);
+      }
+
       function setHeroPreset(repo) {
         const fullUrl = repo.startsWith("http") ? repo : `https://github.com/${repo}`;
         document.getElementById("hero-input").value = fullUrl;
@@ -1715,6 +1770,7 @@
         if (appState.isProcessing) return;
         appState.isProcessing = true;
         appState.currentRepo = repoUrl;
+        saveRecentRepo(repoUrl);
 
         const startTime = performance.now();
         let timerInterval = null;
@@ -2230,8 +2286,9 @@ npx mrcp-engine setup
         }
       });
 
-      // Inicialização da Configuração de IA e Onboarding Modal
+      // Inicialização da Configuração de IA, Onboarding Modal e Repositórios Recentes
       initAiConfiguration();
+      renderRecentRepos();
     </script>
   </body>
 </html>

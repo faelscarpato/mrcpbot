@@ -726,6 +726,7 @@ export const routeHandlers: Record<
       return res.status(200).json({
         status: "success",
         provider,
+        data: { models },
         models,
       });
     } catch (err: any) {
