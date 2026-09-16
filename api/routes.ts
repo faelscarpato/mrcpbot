@@ -568,10 +568,55 @@ export const routeHandlers: Record<
       { status: "success", full_diagnostic: result },
     );
   },
-  "/api/full-analysis": async (req, res) =>
-    routeHandlers["/api/full-suite"](req, res),
+  "/api/full-analysis": async (req, res) => {
+    const repoUrl = req.query.repo || req.body?.repoUrl || req.body?.repo;
+    if (!repoUrl) {
+      return res
+        .status(400)
+        .json({ status: "error", error_code: "MISSING_TARGET_URL" });
+    }
+
+    // 1. Tenta buscar da API remota oficial mrcp-engine.vercel.app conforme solicitado
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const targetUrl = `https://mrcp-engine.vercel.app/api/full-analysis?repo=${encodeURIComponent(repoUrl)}`;
+      const remoteRes = await fetch(targetUrl, {
+        signal: controller.signal,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "MRCP-Engine-Web/2.6",
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (remoteRes.ok) {
+        const json = (await remoteRes.json()) as any;
+        if (
+          json &&
+          (json.full_diagnostic || json.data || json.status === "success")
+        ) {
+          return sendFormattedResponse(
+            req,
+            res,
+            "full_repository_diagnostic_suite",
+            repoUrl,
+            json,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.warn(
+        "Aviso ao buscar da API remota mrcp-engine.vercel.app, acionando fallback local:",
+        err.message,
+      );
+    }
+
+    // Fallback local caso a conexão externa falhe
+    return routeHandlers["/api/full-suite"](req, res);
+  },
   "/api/deep-analysis": async (req, res) =>
-    routeHandlers["/api/full-suite"](req, res),
+    routeHandlers["/api/full-analysis"](req, res),
 
   // 25. /api/clone & /api/page-cloner (PageCloner Pro Engine)
   "/api/clone": async (req, res) => {
@@ -643,13 +688,17 @@ export const routeHandlers: Record<
             "Olá! Apresente o MRCP Engine e como ele economiza tokens e reduz custos para equipes de software.",
         },
       ];
-      const model = req.body?.model || req.query?.model || "gemini-3.5-flash";
+      const model = req.body?.model || req.query?.model || "gemini-2.5-flash";
       const projectContext = req.body?.projectContext;
+      const fullDiagnostic = req.body?.fullDiagnostic;
+      const startTimeMs = req.body?.startTimeMs;
 
       const result = await processChatConversation({
         messages,
         model,
         projectContext,
+        fullDiagnostic,
+        startTimeMs,
       });
 
       return res.status(200).json({
