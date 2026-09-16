@@ -1,26 +1,28 @@
 import { GoogleGenAI } from "@google/genai";
 import { calculateBenchmark, BenchmarkReport } from "./roiBenchmark";
+import {
+  SupportedProvider,
+  executeOpenAiCompatibleChat,
+  executeClaudeChat,
+} from "./aiProviderService";
 
-let aiClient: GoogleGenAI | null = null;
+const aiClient: GoogleGenAI | null = null;
 
-function getGenAI(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn(
-        "GEMINI_API_KEY environment variable is not set. Gemini calls will fail if invoked.",
-      );
-    }
-    aiClient = new GoogleGenAI({
-      apiKey: apiKey || "",
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
+function getGenAI(customApiKey?: string): GoogleGenAI {
+  const apiKey = customApiKey?.trim() || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn(
+      "Nenhuma chave GEMINI_API_KEY configurada. Fallback determinístico será acionado se necessário.",
+    );
   }
-  return aiClient;
+  return new GoogleGenAI({
+    apiKey: apiKey || "",
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
+      },
+    },
+  });
 }
 
 export interface ChatMessage {
@@ -30,6 +32,9 @@ export interface ChatMessage {
 
 export interface ChatRequestOptions {
   messages: ChatMessage[];
+  provider?: SupportedProvider;
+  apiKey?: string;
+  baseUrl?: string;
   model?: string;
   fullDiagnostic?: any;
   codeHealth?: any;
@@ -90,24 +95,16 @@ export async function processChatConversation(
   options: ChatRequestOptions,
 ): Promise<ChatResponseResult> {
   const startTimer = options.startTimeMs || Date.now();
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "A chave GEMINI_API_KEY não foi configurada no ambiente. Adicione-a em Configurações > Secrets ou .env.",
-    );
-  }
-
-  // Fast model mapping: prefer gemini-2.5-flash or gemini-flash-latest for sub-second responses
-  let selectedModel = "gemini-2.5-flash";
-  if (options.model === "gemini-3.1-pro-preview") {
-    selectedModel = "gemini-3.1-pro-preview";
-  } else if (options.model === "gemini-3.1-flash-lite") {
-    selectedModel = "gemini-3.1-flash-lite";
-  } else {
-    selectedModel = "gemini-2.5-flash";
-  }
-
-  const ai = getGenAI();
+  const provider = options.provider || "gemini";
+  const selectedModel =
+    options.model ||
+    (provider === "gemini"
+      ? "gemini-2.5-flash"
+      : provider === "openai"
+        ? "gpt-4o"
+        : provider === "claude"
+          ? "claude-3-7-sonnet-20250219"
+          : "meta/llama-3.3-70b-instruct");
 
   // Process real codeHealth or full_diagnostic if provided
   let benchmark: BenchmarkReport | undefined;
@@ -282,53 +279,130 @@ ${topPriorities || "  * Nenhum arquivo crítico extremo detectado"}
     });
   }
 
-  let response: any = null;
+  let responseReply = "";
   let activeModelUsed = selectedModel;
+  let tokenUsage = { promptTokens: 0, candidatesTokens: 0, totalTokens: 0 };
 
-  const candidateModels = [
-    selectedModel,
-    "gemini-flash-latest",
-    "gemini-3.8-flash",
-  ];
-  const triedModels = new Set<string>();
+  try {
+    if (
+      provider === "openai" ||
+      provider === "nvidia" ||
+      provider === "custom"
+    ) {
+      const baseUrl =
+        provider === "openai"
+          ? "https://api.openai.com/v1"
+          : provider === "nvidia"
+            ? options.baseUrl || "https://integrate.api.nvidia.com/v1"
+            : options.baseUrl || "http://localhost:11434/v1";
 
-  for (const modelCandidate of candidateModels) {
-    if (triedModels.has(modelCandidate)) continue;
-    triedModels.add(modelCandidate);
-    try {
-      response = await ai.models.generateContent({
-        model: modelCandidate,
-        contents,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.2,
-          thinkingConfig: {
-            thinkingBudget: 0,
-          },
-        },
+      const formattedMessages = options.messages.map((m, idx) => {
+        let content = m.content;
+        if (
+          idx === options.messages.length - 1 &&
+          m.role === "user" &&
+          contextAddendum
+        ) {
+          content = `${content}\n${contextAddendum}`;
+        }
+        return { role: m.role, content };
       });
-      activeModelUsed = modelCandidate;
-      break;
-    } catch (err: any) {
-      console.warn(
-        `Gemini call with ${modelCandidate} failed (${err.status || err.message}). Attempting fallback...`,
-      );
+
+      const res = await executeOpenAiCompatibleChat({
+        baseUrl,
+        apiKey: options.apiKey,
+        model: selectedModel,
+        messages: formattedMessages,
+        systemInstruction: SYSTEM_INSTRUCTION,
+      });
+      responseReply = res.reply;
+      tokenUsage = {
+        promptTokens: res.promptTokens,
+        candidatesTokens: res.candidatesTokens,
+        totalTokens: res.totalTokens,
+      };
+    } else if (provider === "claude") {
+      const formattedMessages = options.messages.map((m, idx) => {
+        let content = m.content;
+        if (
+          idx === options.messages.length - 1 &&
+          m.role === "user" &&
+          contextAddendum
+        ) {
+          content = `${content}\n${contextAddendum}`;
+        }
+        return { role: m.role, content };
+      });
+
+      const res = await executeClaudeChat({
+        apiKey: options.apiKey || "",
+        model: selectedModel,
+        messages: formattedMessages,
+        systemInstruction: SYSTEM_INSTRUCTION,
+      });
+      responseReply = res.reply;
+      tokenUsage = {
+        promptTokens: res.promptTokens,
+        candidatesTokens: res.candidatesTokens,
+        totalTokens: res.totalTokens,
+      };
+    } else {
+      // Gemini provider (usa chave do usuário se fornecida, ou fallback do ambiente)
+      const ai = getGenAI(options.apiKey);
+      const candidateModels = [
+        selectedModel,
+        "gemini-2.5-flash",
+        "gemini-flash-latest",
+        "gemini-3.8-flash",
+      ];
+      const triedModels = new Set<string>();
+
+      for (const modelCandidate of candidateModels) {
+        if (triedModels.has(modelCandidate)) continue;
+        triedModels.add(modelCandidate);
+        try {
+          const resp = await ai.models.generateContent({
+            model: modelCandidate,
+            contents,
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              temperature: 0.2,
+              thinkingConfig: {
+                thinkingBudget: 0,
+              },
+            },
+          });
+          if (resp && resp.text) {
+            responseReply = resp.text;
+            activeModelUsed = modelCandidate;
+            tokenUsage = {
+              promptTokens: resp.usageMetadata?.promptTokenCount || 0,
+              candidatesTokens: resp.usageMetadata?.candidatesTokenCount || 0,
+              totalTokens: resp.usageMetadata?.totalTokenCount || 0,
+            };
+            break;
+          }
+        } catch (err: any) {
+          console.warn(
+            `Gemini call with ${modelCandidate} failed (${err.status || err.message}). Attempting fallback...`,
+          );
+        }
+      }
     }
+  } catch (providerErr: any) {
+    console.warn(
+      `Chamada ao provedor ${provider} falhou:`,
+      providerErr.message,
+    );
   }
 
   const executionDurationSeconds = Number(
     ((Date.now() - startTimer) / 1000).toFixed(2),
   );
 
-  if (response && response.text) {
-    const tokenUsage = {
-      promptTokens: response.usageMetadata?.promptTokenCount || 0,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: response.usageMetadata?.totalTokenCount || 0,
-    };
-
+  if (responseReply) {
     return {
-      reply: response.text,
+      reply: responseReply,
       model: activeModelUsed,
       executionDurationSeconds,
       tokenUsage,

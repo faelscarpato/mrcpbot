@@ -708,7 +708,36 @@ export const routeHandlers: Record<
     return routeHandlers["/api/clone"](req, res);
   },
 
-  // 27. /api/chat (Gemini AI Multi-turn Chatbot - Curador de Custos & Arquiteto MRCP)
+  // 26.5 /api/ai/models (Listagem dinâmica de modelos por provedor: Gemini, OpenAI, Claude, Nvidia, Custom)
+  "/api/ai/models": async (req, res) => {
+    try {
+      const { listProviderModels } =
+        await import("../src/services/aiProviderService");
+      const provider = req.query?.provider || req.body?.provider || "gemini";
+      const apiKey = req.query?.apiKey || req.body?.apiKey;
+      const baseUrl = req.query?.baseUrl || req.body?.baseUrl;
+
+      const models = await listProviderModels({
+        provider,
+        apiKey,
+        baseUrl,
+      });
+
+      return res.status(200).json({
+        status: "success",
+        provider,
+        models,
+      });
+    } catch (err: any) {
+      console.error("Erro em /api/ai/models:", err);
+      return res.status(500).json({
+        status: "error",
+        message: err.message || "Erro ao consultar modelos do provedor.",
+      });
+    }
+  },
+
+  // 27. /api/chat (Multi-provider AI Chatbot - Curador de Custos & Arquiteto MRCP)
   "/api/chat": async (req, res) => {
     try {
       const { processChatConversation } =
@@ -722,7 +751,10 @@ export const routeHandlers: Record<
             "Olá! Apresente o MRCP Engine e como ele economiza tokens e reduz custos para equipes de software.",
         },
       ];
-      const model = req.body?.model || req.query?.model || "gemini-2.5-flash";
+      const provider = req.body?.provider || req.query?.provider || "gemini";
+      const apiKey = req.body?.apiKey;
+      const baseUrl = req.body?.baseUrl;
+      const model = req.body?.model || req.query?.model;
       const projectContext = req.body?.projectContext;
       const fullDiagnostic = req.body?.fullDiagnostic;
       const codeHealth = req.body?.codeHealth;
@@ -730,6 +762,9 @@ export const routeHandlers: Record<
 
       const result = await processChatConversation({
         messages,
+        provider,
+        apiKey,
+        baseUrl,
         model,
         projectContext,
         fullDiagnostic,
@@ -746,7 +781,8 @@ export const routeHandlers: Record<
       return res.status(500).json({
         status: "error",
         error_code: "CHAT_ERROR",
-        message: err.message || "Erro ao processar conversa no Gemini.",
+        message:
+          err.message || "Erro ao processar conversa com o provedor de IA.",
       });
     }
   },

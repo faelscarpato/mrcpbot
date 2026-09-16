@@ -310,6 +310,18 @@
         </div>
 
         <div class="border-t border-[#17283c] pt-4 space-y-2">
+          <!-- Botão Configurar IA & Chaves (Mobile) -->
+          <button
+            onclick="openAiSettingsModal(); closeDrawer();"
+            class="w-full flex items-center justify-between px-2.5 py-2 text-[#4edea3] hover:bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-xl transition-all text-left font-medium text-xs shadow-sm"
+          >
+            <span class="flex items-center space-x-2">
+              <span class="material-symbols-outlined text-[17px]">tune</span>
+              <span>Configurar IA &amp; Chaves</span>
+            </span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#4edea3]/20 text-[#4edea3]" id="mobile-sidebar-provider-tag">Gemini</span>
+          </button>
+
           <nav class="space-y-1 text-xs">
             <a
               href="https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode"
@@ -440,6 +452,16 @@
 
       <!-- Rodapé Discreto da Sidebar -->
       <div class="p-3 border-t border-[#1c2b3c] space-y-1 text-xs">
+        <button
+          onclick="openAiSettingsModal()"
+          class="w-full flex items-center justify-between px-2.5 py-2 text-[#4edea3] hover:bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-xl transition-all text-left font-medium text-xs mb-1 shadow-sm"
+        >
+          <span class="flex items-center space-x-2">
+            <span class="material-symbols-outlined text-[16px]">tune</span>
+            <span>Configurar IA &amp; Chaves</span>
+          </span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#4edea3]/20 text-[#4edea3]" id="desktop-sidebar-provider-tag">Gemini</span>
+        </button>
         <a
           href="https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode"
           target="_blank"
@@ -505,55 +527,17 @@
             </span>
           </div>
 
-          <!-- Seletor de Modelo Discreto (Gemini) -->
-          <div class="relative inline-block" id="model-dropdown-container">
-            <div
-              onclick="toggleModelMenu()"
-              class="flex items-center space-x-1.5 bg-[#0d1c2d] hover:bg-[#122131] border border-[#1c2b3c] rounded-full px-3 py-1 cursor-pointer transition-colors text-xs"
-            >
-              <span class="w-2 h-2 rounded-full bg-[#4edea3]"></span>
-              <span class="font-mono font-medium text-white" id="current-model-label">gemini-3.5-flash</span>
-              <span class="material-symbols-outlined text-[14px] text-[#bec6e0]">expand_more</span>
-            </div>
-
-            <!-- Menu Dropdown Modelos -->
-            <div
-              id="model-menu"
-              class="hidden absolute left-0 mt-1.5 w-64 bg-[#1c2b3c] border border-[#273647] rounded-xl shadow-2xl py-1.5 z-50"
-            >
-              <div class="px-3 py-1.5 text-[10px] uppercase tracking-wider font-mono text-[#bec6e0]">Modelos LLM Suportados</div>
-              <button
-                onclick="changeModel('gemini-3.5-flash', 0.58)"
-                class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#273647] transition-colors"
-              >
-                <div>
-                  <div class="font-medium text-white">gemini-3.5-flash</div>
-                  <div class="text-[10px] text-[#bec6e0]">Equilíbrio ideal de latência e raciocínio</div>
-                </div>
-                <span class="text-[#4edea3] text-[11px] font-mono">0.58s</span>
-              </button>
-              <button
-                onclick="changeModel('gemini-3.1-flash-lite', 0.22)"
-                class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#273647] transition-colors"
-              >
-                <div>
-                  <div class="font-medium text-white">gemini-3.1-flash-lite</div>
-                  <div class="text-[10px] text-[#bec6e0]">Ultra baixa latência &amp; custo mínimo</div>
-                </div>
-                <span class="text-[#bec6e0] text-[11px] font-mono">0.22s</span>
-              </button>
-              <button
-                onclick="changeModel('gemini-3.1-pro-preview', 1.15)"
-                class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#273647] transition-colors"
-              >
-                <div>
-                  <div class="font-medium text-white">gemini-3.1-pro-preview</div>
-                  <div class="text-[10px] text-[#bec6e0]">Auditoria profunda de arquitetura</div>
-                </div>
-                <span class="text-[#bec6e0] text-[11px] font-mono">1.15s</span>
-              </button>
-            </div>
-          </div>
+          <!-- Seletor do Provedor de IA Ativo & Botão de Configuração -->
+          <button
+            id="header-ai-config-btn"
+            onclick="openAiSettingsModal()"
+            class="flex items-center space-x-2 bg-[#0d1c2d] hover:bg-[#122131] border border-[#1c2b3c] hover:border-[#4edea3]/40 rounded-full px-3 py-1 cursor-pointer transition-all text-xs group"
+            title="Clique para configurar chave de API ou alternar provedor (Gemini, ChatGPT, Claude, Nvidia, Custom)"
+          >
+            <span class="w-2 h-2 rounded-full bg-[#4edea3] group-hover:scale-125 transition-transform"></span>
+            <span class="font-mono font-medium text-white" id="current-model-label">Gemini · gemini-2.5-flash</span>
+            <span class="material-symbols-outlined text-[14px] text-[#4edea3]">tune</span>
+          </button>
         </div>
 
         <!-- Trailing Status & Info -->
@@ -768,18 +752,856 @@
     </div>
 
     <!-- ========================================================= -->
+    <!-- MODAL 1: ONBOARDING MRCP & 3 FRENTES DE USO -->
+    <!-- ========================================================= -->
+    <div
+      id="onboarding-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md transition-opacity duration-300 hidden"
+    >
+      <div
+        class="bg-[#071728] border border-[#1d2f44] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn"
+      >
+        <!-- Modal Top Bar -->
+        <div class="px-6 py-4 border-b border-[#17283c] flex items-center justify-between bg-[#040e1a]/80">
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3]">
+              <span class="material-symbols-outlined text-[18px]">bolt</span>
+            </span>
+            <span class="font-mono text-xs font-semibold text-[#4edea3] tracking-wide uppercase">MRCP Engine 2.6 · Governança AST</span>
+          </div>
+          <button
+            onclick="closeOnboardingModal()"
+            class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#13253b] transition-colors"
+            title="Fechar"
+          >
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        <!-- Modal Body com Frase de Impacto e 3 Frentes -->
+        <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
+          <!-- Frase de Impacto Principal -->
+          <div class="space-y-2">
+            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+              Reduza até <span class="text-[#4edea3] underline decoration-[#4edea3]/30 underline-offset-4">98% dos custos de tokens</span> e elimine alucinações de IA com Contexto AST Determinístico.
+            </h2>
+            <p class="text-xs sm:text-sm text-[#a8b8cc] leading-relaxed">
+              O MRCP (Machine-Readable Context Protocol) resolve o gargalo de contexto em larga escala, substituindo despejos brutos de arquivos por árvores de sintaxe e grafos de dependências cirúrgicos em 3 frentes unificadas:
+            </p>
+          </div>
+
+          <!-- As 3 Frentes de Uso do MRCP -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- 1. REST API Core -->
+            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">api</span>
+                  </span>
+                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">CI/CD &amp; API</span>
+                </div>
+                <h3 class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">1. REST API Core</h3>
+                <p class="text-xs text-[#94a3b8] leading-relaxed">
+                  Endpoints de alta performance (<code class="text-blue-300 text-[11px]">/api/code-health</code>, <code class="text-blue-300 text-[11px]">/api/context-pack</code>) para pipelines de CI/CD, esteiras de código e integrações via cURL/HTTP.
+                </p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-blue-400">
+                ⚡ Microserviço Nativo
+              </div>
+            </div>
+
+            <!-- 2. MCP Protocol Server -->
+            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="w-8 h-8 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3] flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">hub</span>
+                  </span>
+                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/30">21 Ferramentas</span>
+                </div>
+                <h3 class="text-sm font-bold text-white group-hover:text-[#4edea3] transition-colors">2. MCP Protocol Server</h3>
+                <p class="text-xs text-[#94a3b8] leading-relaxed">
+                  Servidor Model Context Protocol nativo com 21 ferramentas de análise e refatoração direta para Cursor, Windsurf, Claude Code e Cline via <code class="text-[#4edea3] text-[11px]">npx mrcp-engine setup</code>.
+                </p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-[#4edea3]">
+                🤖 Agentes de IA
+              </div>
+            </div>
+
+            <!-- 3. Extensão VS Code -->
+            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">extension</span>
+                  </span>
+                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">13 Análises</span>
+                </div>
+                <h3 class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">3. Extensão VS Code</h3>
+                <p class="text-xs text-[#94a3b8] leading-relaxed">
+                  13 análises contínuas em tempo real integradas diretamente ao editor: God Modules, acoplamento e poda AST antes do envio para qualquer LLM.
+                </p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-purple-400">
+                💻 No Editor
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-[#17283c] bg-[#040e1a]/90 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button
+            onclick="skipOnboardingAndExplore()"
+            class="text-xs text-slate-400 hover:text-white transition-colors order-2 sm:order-1"
+          >
+            Explorar com Chave Demonstrativa
+          </button>
+          <button
+            onclick="openAiSettingsFromOnboarding()"
+            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-[#10b981]/25 transition-all active:scale-95 order-1 sm:order-2"
+          >
+            <span>Configurar Minha Própria IA</span>
+            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL 2: CONFIGURAÇÃO DE IA MULTI-PROVEDOR -->
+    <!-- ========================================================= -->
+    <div
+      id="ai-settings-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md transition-opacity duration-300 hidden"
+    >
+      <div
+        class="bg-[#071728] border border-[#1d2f44] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn"
+      >
+        <!-- Modal Top Bar -->
+        <div class="px-6 py-4 border-b border-[#17283c] flex items-center justify-between bg-[#040e1a]/80">
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3]">
+              <span class="material-symbols-outlined text-[18px]">tune</span>
+            </span>
+            <div>
+              <span class="font-bold text-sm text-white block">Configuração do Provedor de IA</span>
+              <span class="text-[11px] text-slate-400">Conecte sua própria chave de API para controle total de limites e custos</span>
+            </div>
+          </div>
+          <button
+            onclick="closeAiSettingsModal()"
+            class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#13253b] transition-colors"
+            title="Fechar"
+          >
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        <!-- Provider Selection Tabs -->
+        <div class="px-6 pt-3 pb-0 bg-[#06121f] border-b border-[#17283c] flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button
+            id="tab-btn-gemini"
+            type="button"
+            onclick="switchProviderTab('gemini')"
+            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-[#4edea3] border-[#4edea3] bg-[#0c1e33]"
+          >
+            <span>Google Gemini</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-[#4edea3]/15 text-[#4edea3]">Pré-configurado</span>
+          </button>
+          <button
+            id="tab-btn-openai"
+            type="button"
+            onclick="switchProviderTab('openai')"
+            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
+          >
+            <span>ChatGPT (OpenAI)</span>
+          </button>
+          <button
+            id="tab-btn-claude"
+            type="button"
+            onclick="switchProviderTab('claude')"
+            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
+          >
+            <span>Claude (Anthropic)</span>
+          </button>
+          <button
+            id="tab-btn-nvidia"
+            type="button"
+            onclick="switchProviderTab('nvidia')"
+            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
+          >
+            <span>NVIDIA NIM</span>
+          </button>
+          <button
+            id="tab-btn-custom"
+            type="button"
+            onclick="switchProviderTab('custom')"
+            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
+          >
+            <span class="material-symbols-outlined text-[15px]">dns</span>
+            <span>Custom Provedor</span>
+          </button>
+        </div>
+
+        <!-- Provider Content Panes -->
+        <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+          <!-- Banner de Status & Privacidade -->
+          <div class="p-3 rounded-xl bg-[#091829] border border-[#1a2c42] flex items-center justify-between text-xs text-slate-300">
+            <div class="flex items-center space-x-2">
+              <span class="material-symbols-outlined text-[18px] text-[#4edea3]">lock</span>
+              <span>Sua chave é salva localmente no navegador (<code class="text-[#4edea3]">localStorage</code>) e enviada somente para suas inferências.</span>
+            </div>
+          </div>
+
+          <!-- PANE: GEMINI -->
+          <div id="pane-gemini" class="space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-slate-200">Chave de API Gemini (Google AI Studio)</label>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                >
+                  <span>Obter chave gratuita no AI Studio</span>
+                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                </a>
+              </div>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="gemini-api-key"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
+                  placeholder="AIzaSy..."
+                  oninput="handleApiKeyChangeDebounced('gemini')"
+                />
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('gemini-api-key', this)"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                >
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Ao inserir sua chave, o MRCP carrega automaticamente os modelos disponíveis na sua conta.</p>
+            </div>
+          </div>
+
+          <!-- PANE: OPENAI -->
+          <div id="pane-openai" class="space-y-4 hidden">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-slate-200">Chave de API OpenAI (ChatGPT)</label>
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                >
+                  <span>Obter chave na OpenAI Platform</span>
+                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                </a>
+              </div>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="openai-api-key"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
+                  placeholder="sk-proj-..."
+                  oninput="handleApiKeyChangeDebounced('openai')"
+                />
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('openai-api-key', this)"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                >
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">O app consulta a API da OpenAI para listar os modelos ativos de chat (gpt-4o, o3-mini, etc.).</p>
+            </div>
+          </div>
+
+          <!-- PANE: CLAUDE -->
+          <div id="pane-claude" class="space-y-4 hidden">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-slate-200">Chave de API Anthropic (Claude)</label>
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                >
+                  <span>Console Anthropic</span>
+                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                </a>
+              </div>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="claude-api-key"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
+                  placeholder="sk-ant-api03-..."
+                  oninput="handleApiKeyChangeDebounced('claude')"
+                />
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('claude-api-key', this)"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                >
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Pré-configurado com Claude 3.7 Sonnet (híbrido) e Claude 3.5 Sonnet.</p>
+            </div>
+          </div>
+
+          <!-- PANE: NVIDIA -->
+          <div id="pane-nvidia" class="space-y-4 hidden">
+            <div>
+              <label class="block text-xs font-medium text-slate-200 mb-1.5">NVIDIA NIM Base URL</label>
+              <input
+                type="text"
+                id="nvidia-base-url"
+                class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 mb-3"
+                value="https://integrate.api.nvidia.com/v1"
+              />
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-slate-200">Chave de API NVIDIA NIM</label>
+                <a
+                  href="https://build.nvidia.com"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                >
+                  <span>NVIDIA Build Console</span>
+                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                </a>
+              </div>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="nvidia-api-key"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
+                  placeholder="nvapi-..."
+                  oninput="handleApiKeyChangeDebounced('nvidia')"
+                />
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('nvidia-api-key', this)"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                >
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANE: CUSTOM -->
+          <div id="pane-custom" class="space-y-4 hidden">
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-200 mb-1.5">Nome do Provedor Customizado</label>
+                <input
+                  type="text"
+                  id="custom-provider-name"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500"
+                  placeholder="Ex: Ollama Local, OpenRouter, Groq Cloud, vLLM, LM Studio"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-200 mb-1.5">Base URL (Compatível com especificação OpenAI)</label>
+                <input
+                  type="text"
+                  id="custom-base-url"
+                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs font-mono text-white placeholder:text-slate-500"
+                  placeholder="http://localhost:11434/v1 ou https://openrouter.ai/api/v1"
+                  oninput="handleApiKeyChangeDebounced('custom')"
+                />
+                <p class="text-[10px] text-slate-400 mt-1">Ao preencher a URL, o app consulta automaticamente <code class="text-[#4edea3]">/models</code> para carregar todos os modelos da sua conta/servidor.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-200 mb-1.5">Chave de API (opcional se for servidor local)</label>
+                <div class="relative">
+                  <input
+                    type="password"
+                    id="custom-api-key"
+                    class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
+                    placeholder="Chave de API (Bearer Token)"
+                    oninput="handleApiKeyChangeDebounced('custom')"
+                  />
+                  <button
+                    type="button"
+                    onclick="togglePasswordVisibility('custom-api-key', this)"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO COMPARTILHADA: MODELOS ATUAIS DA CONTA -->
+          <div class="p-4 rounded-xl bg-[#0a1828] border border-[#1d2f44] space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-xs font-semibold text-white">Modelo Ativo para Auditorias &amp; Chat</label>
+                <span id="models-status-badge" class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span>
+                  <span>Modelos atuais disponíveis</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                id="btn-refresh-models"
+                onclick="loadModelsForCurrentProvider(true)"
+                class="px-2.5 py-1 rounded-lg bg-[#0f233a] hover:bg-[#163354] border border-[#1d2f44] text-[11px] font-medium text-slate-200 hover:text-white flex items-center gap-1 transition-colors"
+                title="Buscar modelos atualizados na conta"
+              >
+                <span class="material-symbols-outlined text-[14px]" id="refresh-models-icon">refresh</span>
+                <span>Buscar Modelos</span>
+              </button>
+            </div>
+
+            <div class="relative">
+              <select
+                id="ai-model-select"
+                class="w-full bg-[#06121f] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3 py-2.5 text-xs font-mono text-white appearance-none cursor-pointer"
+              >
+                <option value="gemini-2.5-flash">gemini-2.5-flash (Recomendado · Ultra rápido &amp; econômico)</option>
+                <option value="gemini-2.5-pro">gemini-2.5-pro (Auditoria profunda de arquitetura)</option>
+                <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Nova geração avançada)</option>
+                <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Máxima velocidade)</option>
+                <option value="gemini-flash-latest">gemini-flash-latest (Alias estável)</option>
+              </select>
+              <span class="material-symbols-outlined text-[16px] text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">unfold_more</span>
+            </div>
+
+            <div id="model-description-box" class="text-[11px] text-slate-400 bg-[#06121f]/60 p-2.5 rounded-lg border border-[#1d2f44]/60 font-sans">
+              Recomendado · Equilíbrio ideal entre tempo de resposta determinístico, análise de código e custo de tokens.
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-[#17283c] bg-[#040e1a]/90 flex items-center justify-between">
+          <button
+            type="button"
+            onclick="closeAiSettingsModal()"
+            class="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-[#122235] transition-colors"
+          >
+            Cancelar
+          </button>
+          <div class="flex items-center space-x-2">
+            <button
+              type="button"
+              onclick="testProviderConnection()"
+              id="btn-test-connection"
+              class="px-3.5 py-2 rounded-xl bg-[#0c1f33] hover:bg-[#142d4a] border border-[#1d2f44] text-xs font-medium text-slate-200 transition-colors flex items-center gap-1.5"
+            >
+              <span>Testar Conexão</span>
+            </button>
+            <button
+              type="button"
+              onclick="saveAiSettings()"
+              class="px-5 py-2 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-[#10b981]/20 transition-all active:scale-95"
+            >
+              <span class="material-symbols-outlined text-[16px]">check</span>
+              <span>Salvar &amp; Ativar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
     <!-- 5. MOTOR JAVASCRIPT & INTEGRAÇÃO COM GEMINI E AST -->
     <!-- ========================================================= -->
     <script>
+      // =========================================================
+      // MODELOS PADRÃO POR PROVEDOR (FALLBACK CANÔNICO & ATUAL)
+      // =========================================================
+      const DEFAULT_MODELS_BY_PROVIDER = {
+        gemini: [
+          { id: "gemini-2.5-flash", name: "gemini-2.5-flash (Recomendado · Ultra rápido & econômico)" },
+          { id: "gemini-2.5-pro", name: "gemini-2.5-pro (Auditoria profunda de arquitetura)" },
+          { id: "gemini-3.1-pro-preview", name: "gemini-3.1-pro-preview (Nova geração avançada)" },
+          { id: "gemini-3.1-flash-lite", name: "gemini-3.1-flash-lite (Máxima velocidade)" },
+          { id: "gemini-flash-latest", name: "gemini-flash-latest (Alias estável)" }
+        ],
+        openai: [
+          { id: "gpt-4o", name: "gpt-4o (Recomendado · Multimodal & Raciocínio ágil)" },
+          { id: "gpt-4o-mini", name: "gpt-4o-mini (Econômico e veloz)" },
+          { id: "o3-mini", name: "o3-mini (Raciocínio avançado para código)" },
+          { id: "o1", name: "o1 (Raciocínio deliberativo profundo)" },
+          { id: "gpt-4-turbo", name: "gpt-4-turbo (Contexto longo 128k)" }
+        ],
+        claude: [
+          { id: "claude-3-7-sonnet-20250219", name: "claude-3.7-sonnet (Híbrido com raciocínio adaptativo)" },
+          { id: "claude-3-5-sonnet-20241022", name: "claude-3.5-sonnet (Padrão ouro de engenharia de software)" },
+          { id: "claude-3-5-haiku-20241022", name: "claude-3.5-haiku (Ultra veloz para triage)" }
+        ],
+        nvidia: [
+          { id: "meta/llama-3.3-70b-instruct", name: "meta/llama-3.3-70b-instruct (Excelente para análise de código e AST)" },
+          { id: "deepseek-ai/deepseek-r1", name: "deepseek-ai/deepseek-r1 (Raciocínio deliberativo de código)" },
+          { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "nvidia/llama-3.1-nemotron-70b-instruct (Otimizado pela NVIDIA)" }
+        ],
+        custom: [
+          { id: "default", name: "Insira a Base URL para carregar os modelos disponíveis" }
+        ]
+      };
+
       const appState = {
         sidebarOpen: true,
-        selectedModel: "gemini-3.5-flash",
-        latencyFactor: 0.58,
+        selectedModel: "gemini-2.5-flash",
+        latencyFactor: 0.45,
         currentRepo: "https://github.com/faelscarpato/mrcp-engine",
         conversationHistory: [],
         currentBenchmark: null,
-        isProcessing: false
+        isProcessing: false,
+        aiConfig: {
+          activeProvider: "gemini",
+          geminiKey: "",
+          openaiKey: "",
+          claudeKey: "",
+          nvidiaKey: "",
+          nvidiaBaseUrl: "https://integrate.api.nvidia.com/v1",
+          customName: "",
+          customKey: "",
+          customBaseUrl: "",
+          selectedModel: "gemini-2.5-flash",
+          availableModels: []
+        }
       };
+
+      let debounceTimer = null;
+      let tempActiveTab = "gemini";
+
+      function getActiveApiKey() {
+        const p = appState.aiConfig.activeProvider;
+        if (p === "gemini") return appState.aiConfig.geminiKey || "";
+        if (p === "openai") return appState.aiConfig.openaiKey || "";
+        if (p === "claude") return appState.aiConfig.claudeKey || "";
+        if (p === "nvidia") return appState.aiConfig.nvidiaKey || "";
+        if (p === "custom") return appState.aiConfig.customKey || "";
+        return "";
+      }
+
+      function getActiveBaseUrl() {
+        const p = appState.aiConfig.activeProvider;
+        if (p === "nvidia") return appState.aiConfig.nvidiaBaseUrl || "https://integrate.api.nvidia.com/v1";
+        if (p === "custom") return appState.aiConfig.customBaseUrl || "";
+        return "";
+      }
+
+      // =========================================================
+      // GERENCIAMENTO DE MODAIS (ONBOARDING & CONFIGURAÇÃO DE IA)
+      // =========================================================
+      function openOnboardingModal() {
+        const modal = document.getElementById("onboarding-modal");
+        if (modal) modal.classList.remove("hidden");
+      }
+
+      function closeOnboardingModal() {
+        const modal = document.getElementById("onboarding-modal");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function skipOnboardingAndExplore() {
+        localStorage.setItem("mrcp_onboarding_dismissed", "true");
+        closeOnboardingModal();
+      }
+
+      function openAiSettingsFromOnboarding() {
+        localStorage.setItem("mrcp_onboarding_dismissed", "true");
+        closeOnboardingModal();
+        openAiSettingsModal();
+      }
+
+      function openAiSettingsModal() {
+        const modal = document.getElementById("ai-settings-modal");
+        if (!modal) return;
+        modal.classList.remove("hidden");
+
+        // Sincroniza campos do formulário com appState.aiConfig
+        document.getElementById("gemini-api-key").value = appState.aiConfig.geminiKey || "";
+        document.getElementById("openai-api-key").value = appState.aiConfig.openaiKey || "";
+        document.getElementById("claude-api-key").value = appState.aiConfig.claudeKey || "";
+        document.getElementById("nvidia-api-key").value = appState.aiConfig.nvidiaKey || "";
+        document.getElementById("nvidia-base-url").value = appState.aiConfig.nvidiaBaseUrl || "https://integrate.api.nvidia.com/v1";
+        document.getElementById("custom-provider-name").value = appState.aiConfig.customName || "";
+        document.getElementById("custom-base-url").value = appState.aiConfig.customBaseUrl || "";
+        document.getElementById("custom-api-key").value = appState.aiConfig.customKey || "";
+
+        // Abre na aba do provedor ativo atualmente
+        switchProviderTab(appState.aiConfig.activeProvider || "gemini");
+      }
+
+      function closeAiSettingsModal() {
+        const modal = document.getElementById("ai-settings-modal");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function switchProviderTab(providerId) {
+        tempActiveTab = providerId;
+        const providers = ["gemini", "openai", "claude", "nvidia", "custom"];
+
+        // Atualiza abas visuais
+        providers.forEach((p) => {
+          const tabBtn = document.getElementById(`tab-btn-${p}`);
+          const pane = document.getElementById(`pane-${p}`);
+          if (tabBtn && pane) {
+            if (p === providerId) {
+              tabBtn.className = "px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-[#4edea3] border-[#4edea3] bg-[#0c1e33]";
+              pane.classList.remove("hidden");
+            } else {
+              tabBtn.className = "px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50";
+              pane.classList.add("hidden");
+            }
+          }
+        });
+
+        // Carrega os modelos correspondentes ao provedor selecionado
+        loadModelsForCurrentProvider(false);
+      }
+
+      function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+        const icon = btn.querySelector(".material-symbols-outlined");
+        if (icon) {
+          icon.textContent = isPassword ? "visibility_off" : "visibility";
+        }
+      }
+
+      function handleApiKeyChangeDebounced(provider) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadModelsForCurrentProvider(false);
+        }, 700);
+      }
+
+      // =========================================================
+      // CARREGAMENTO DINÂMICO DE MODELOS DA CONTA DO USUÁRIO
+      // =========================================================
+      async function loadModelsForCurrentProvider(force = false) {
+        const provider = tempActiveTab;
+        const statusBadge = document.getElementById("models-status-badge");
+        const select = document.getElementById("ai-model-select");
+        const refreshIcon = document.getElementById("refresh-models-icon");
+
+        if (refreshIcon) refreshIcon.classList.add("animate-spin");
+        if (statusBadge) {
+          statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span><span>Consultando modelos na conta (${provider})...</span>`;
+        }
+
+        // Obtém credenciais atuais inseridas nos campos de texto
+        let apiKey = "";
+        let baseUrl = "";
+
+        if (provider === "gemini") apiKey = document.getElementById("gemini-api-key")?.value.trim() || "";
+        else if (provider === "openai") apiKey = document.getElementById("openai-api-key")?.value.trim() || "";
+        else if (provider === "claude") apiKey = document.getElementById("claude-api-key")?.value.trim() || "";
+        else if (provider === "nvidia") {
+          apiKey = document.getElementById("nvidia-api-key")?.value.trim() || "";
+          baseUrl = document.getElementById("nvidia-base-url")?.value.trim() || "";
+        } else if (provider === "custom") {
+          apiKey = document.getElementById("custom-api-key")?.value.trim() || "";
+          baseUrl = document.getElementById("custom-base-url")?.value.trim() || "";
+        }
+
+        let models = [];
+        let fetchedFromAccount = false;
+
+        // Se tiver apiKey ou baseUrl configurada, tenta buscar na API real
+        if (apiKey || (provider === "custom" && baseUrl)) {
+          try {
+            const queryParams = new URLSearchParams({
+              provider,
+              apiKey,
+              baseUrl
+            });
+            const res = await fetch(`/api/ai/models?${queryParams.toString()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.status === "success" && Array.isArray(data.data?.models) && data.data.models.length > 0) {
+                models = data.data.models;
+                fetchedFromAccount = true;
+              }
+            }
+          } catch (err) {
+            console.warn("Falha ao buscar modelos na conta do usuário, recorrendo aos pré-configurados:", err);
+          }
+        }
+
+        // Fallback para modelos pré-configurados se não tiver chave ou se a chamada falhou
+        if (models.length === 0) {
+          models = DEFAULT_MODELS_BY_PROVIDER[provider] || DEFAULT_MODELS_BY_PROVIDER.gemini;
+        }
+
+        // Preenche o Select
+        if (select) {
+          const currentSelected = select.value || appState.selectedModel;
+          select.innerHTML = "";
+
+          models.forEach((m) => {
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.name || m.id;
+            select.appendChild(opt);
+          });
+
+          // Restaura valor selecionado se existir na lista
+          if (models.some((m) => m.id === currentSelected)) {
+            select.value = currentSelected;
+          } else if (models.length > 0) {
+            select.value = models[0].id;
+          }
+        }
+
+        if (refreshIcon) refreshIcon.classList.remove("animate-spin");
+
+        if (statusBadge) {
+          if (fetchedFromAccount) {
+            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span><span class="text-[#4edea3] font-medium">${models.length} modelos ativos carregados da sua conta!</span>`;
+          } else if (apiKey) {
+            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span><span>${models.length} modelos disponíveis para ${provider}</span>`;
+          } else {
+            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span><span>Modelos pré-configurados (${provider})</span>`;
+          }
+        }
+
+        // Atualiza a descrição
+        updateModelDescriptionBox(select?.value || "");
+      }
+
+      function updateModelDescriptionBox(modelId) {
+        const box = document.getElementById("model-description-box");
+        if (!box) return;
+
+        if (modelId.includes("flash")) {
+          box.textContent = "Recomendado · Equilíbrio ideal entre ultra-baixa latência (<0.5s), precisão em árvores sintáticas e custo de tokens mínimo.";
+        } else if (modelId.includes("pro") || modelId.includes("o1") || modelId.includes("r1") || modelId.includes("sonnet")) {
+          box.textContent = "Alta Capacidade Raciocínio · Ideal para refatoração de God Modules complexos, análise profunda de acoplamento e auditoria de arquitetura.";
+        } else if (modelId.includes("4o") || modelId.includes("llama")) {
+          box.textContent = "Modelo de Alta Precisão · Ampla janela de contexto e suporte determinístico a ferramentas externas.";
+        } else {
+          box.textContent = `Modelo selecionado: ${modelId}. Otimizado para geração de contexto e métricas de ROI.`;
+        }
+      }
+
+      document.getElementById("ai-model-select")?.addEventListener("change", (e) => {
+        updateModelDescriptionBox(e.target.value);
+      });
+
+      // =========================================================
+      // TESTE DE CONEXÃO & SALVAMENTO DE CONFIGURAÇÕES
+      // =========================================================
+      async function testProviderConnection() {
+        const btn = document.getElementById("btn-test-connection");
+        const originalHtml = btn?.innerHTML;
+        if (btn) btn.innerHTML = `<span class="spinner"></span> <span>Testando...</span>`;
+
+        try {
+          await loadModelsForCurrentProvider(true);
+          if (btn) {
+            btn.innerHTML = `<span class="material-symbols-outlined text-[15px] text-[#4edea3]">check_circle</span> <span class="text-[#4edea3]">Conectado!</span>`;
+            setTimeout(() => {
+              btn.innerHTML = originalHtml;
+            }, 2500);
+          }
+        } catch (e) {
+          if (btn) {
+            btn.innerHTML = `<span class="material-symbols-outlined text-[15px] text-red-400">error</span> <span class="text-red-400">Falha</span>`;
+            setTimeout(() => {
+              btn.innerHTML = originalHtml;
+            }, 2500);
+          }
+        }
+      }
+
+      function saveAiSettings() {
+        const provider = tempActiveTab;
+        const selectedModel = document.getElementById("ai-model-select")?.value || "gemini-2.5-flash";
+
+        appState.aiConfig.activeProvider = provider;
+        appState.aiConfig.selectedModel = selectedModel;
+        appState.selectedModel = selectedModel;
+
+        appState.aiConfig.geminiKey = document.getElementById("gemini-api-key")?.value.trim() || "";
+        appState.aiConfig.openaiKey = document.getElementById("openai-api-key")?.value.trim() || "";
+        appState.aiConfig.claudeKey = document.getElementById("claude-api-key")?.value.trim() || "";
+        appState.aiConfig.nvidiaKey = document.getElementById("nvidia-api-key")?.value.trim() || "";
+        appState.aiConfig.nvidiaBaseUrl = document.getElementById("nvidia-base-url")?.value.trim() || "https://integrate.api.nvidia.com/v1";
+        appState.aiConfig.customName = document.getElementById("custom-provider-name")?.value.trim() || "";
+        appState.aiConfig.customBaseUrl = document.getElementById("custom-base-url")?.value.trim() || "";
+        appState.aiConfig.customKey = document.getElementById("custom-api-key")?.value.trim() || "";
+
+        // Salva com segurança no localStorage
+        localStorage.setItem("mrcp_ai_config", JSON.stringify(appState.aiConfig));
+        localStorage.setItem("mrcp_onboarding_dismissed", "true");
+
+        // Atualiza a UI no cabeçalho e nas sidebars
+        updateAiUIIndicators();
+
+        closeAiSettingsModal();
+      }
+
+      function updateAiUIIndicators() {
+        const provider = appState.aiConfig.activeProvider || "gemini";
+        const model = appState.aiConfig.selectedModel || "gemini-2.5-flash";
+
+        let providerLabel = "Gemini";
+        if (provider === "openai") providerLabel = "ChatGPT";
+        else if (provider === "claude") providerLabel = "Claude";
+        else if (provider === "nvidia") providerLabel = "NVIDIA";
+        else if (provider === "custom") providerLabel = appState.aiConfig.customName || "Custom";
+
+        // Label no cabeçalho
+        const headerLabel = document.getElementById("current-model-label");
+        if (headerLabel) {
+          headerLabel.textContent = `${providerLabel} · ${model}`;
+        }
+
+        // Tags nas sidebars
+        const desktopTag = document.getElementById("desktop-sidebar-provider-tag");
+        if (desktopTag) desktopTag.textContent = providerLabel;
+
+        const mobileTag = document.getElementById("mobile-sidebar-provider-tag");
+        if (mobileTag) mobileTag.textContent = providerLabel;
+      }
+
+      function initAiConfiguration() {
+        try {
+          const saved = localStorage.getItem("mrcp_ai_config");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            appState.aiConfig = Object.assign({}, appState.aiConfig, parsed);
+            if (appState.aiConfig.selectedModel) {
+              appState.selectedModel = appState.aiConfig.selectedModel;
+            }
+            updateAiUIIndicators();
+          } else {
+            // Se não tem configuração prévia e não dispensou, abre o Onboarding após um breve instante
+            const dismissed = localStorage.getItem("mrcp_onboarding_dismissed");
+            if (!dismissed) {
+              setTimeout(() => {
+                openOnboardingModal();
+              }, 400);
+            }
+          }
+        } catch (e) {
+          console.warn("Falha ao inicializar configurações de IA:", e);
+        }
+      }
 
       // Drawer em Mobile
       function openDrawer() {
@@ -1020,6 +1842,9 @@
             body: JSON.stringify({
               messages: [{ role: "user", content: chatPrompt }],
               model: appState.selectedModel,
+              provider: appState.aiConfig.activeProvider || "gemini",
+              apiKey: getActiveApiKey(),
+              baseUrl: getActiveBaseUrl(),
               codeHealth: codeHealth,
               startTimeMs: startTime
             })
@@ -1209,6 +2034,9 @@
             body: JSON.stringify({
               messages: appState.conversationHistory,
               model: appState.selectedModel,
+              provider: appState.aiConfig.activeProvider || "gemini",
+              apiKey: getActiveApiKey(),
+              baseUrl: getActiveBaseUrl(),
               projectContext: {
                 repoName: appState.currentRepo,
                 filesCount: appState.currentBenchmark?.metrics?.filesCount || 45,
@@ -1401,6 +2229,9 @@ npx mrcp-engine setup
           startNewAnalysis();
         }
       });
+
+      // Inicialização da Configuração de IA e Onboarding Modal
+      initAiConfiguration();
     </script>
   </body>
 </html>
