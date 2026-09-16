@@ -1,0 +1,6 @@
+{
+  "name": "MRCP Engine",
+  "description": "Deterministic AST code-intelligence engine for AI agents with Gemini Cost Curator chatbot and real-time token ROI benchmark.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
