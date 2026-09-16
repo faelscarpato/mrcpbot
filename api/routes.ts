@@ -439,6 +439,40 @@ export const routeHandlers: Record<
       return res
         .status(400)
         .json({ status: "error", error_code: "MISSING_TARGET_URL" });
+
+    // 1. Tenta buscar direto da API remota mrcp-engine.vercel.app/api/code-health
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      const targetUrl = `https://mrcp-engine.vercel.app/api/code-health?repo=${encodeURIComponent(repoUrl)}`;
+      const remoteRes = await fetch(targetUrl, {
+        signal: controller.signal,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "MRCP-Engine-Web/2.6",
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (remoteRes.ok) {
+        const json = (await remoteRes.json()) as any;
+        if (json && (json.code_health || json.status === "success")) {
+          return sendFormattedResponse(
+            req,
+            res,
+            "code_metrics_health_scorer",
+            repoUrl,
+            json,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.warn(
+        "Aviso ao buscar da API remota mrcp-engine.vercel.app/api/code-health, acionando fallback local:",
+        err.message,
+      );
+    }
+
     const { calculateCodeHealth } =
       await import("../packages/core/lib/analysis/code-health.js");
     const result = await calculateCodeHealth({ repoUrl });
@@ -691,6 +725,7 @@ export const routeHandlers: Record<
       const model = req.body?.model || req.query?.model || "gemini-2.5-flash";
       const projectContext = req.body?.projectContext;
       const fullDiagnostic = req.body?.fullDiagnostic;
+      const codeHealth = req.body?.codeHealth;
       const startTimeMs = req.body?.startTimeMs;
 
       const result = await processChatConversation({
@@ -698,6 +733,7 @@ export const routeHandlers: Record<
         model,
         projectContext,
         fullDiagnostic,
+        codeHealth,
         startTimeMs,
       });
 

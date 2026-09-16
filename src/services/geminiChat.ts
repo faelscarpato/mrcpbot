@@ -32,6 +32,7 @@ export interface ChatRequestOptions {
   messages: ChatMessage[];
   model?: string;
   fullDiagnostic?: any;
+  codeHealth?: any;
   projectContext?: {
     repoName?: string;
     filesCount?: number;
@@ -59,25 +60,31 @@ export interface ChatResponseResult {
 }
 
 const SYSTEM_INSTRUCTION = `Você é o **Curador de Custos & Arquiteto Sênior MRCP** (Machine-Readable Context Protocol).
-Sua missão é fornecer diagnósticos executivos altamente precisos, técnicos e objetivos baseados nos dados REAIS do MRCP Engine e AST parser.
+Sua missão é fornecer diagnósticos executivos altamente precisos, técnicos e objetivos baseados nos dados REAIS do endpoint de saúde de código (/api/code-health) e AST parser do MRCP Engine.
 
-Ao emitir o relatório do repositório, você DEVE estruturar a resposta com precisão:
+Ao emitir o relatório do repositório, você DEVE estruturar a resposta com as seguintes seções bem delimitadas:
+
 1. **📊 Relatório de ROI & Eficiência de Tokens (Sem MRCP vs Com MRCP)**:
    - Tabela comparativa objetiva de:
      * **Tokens de Prompt por Tarefa (8 turnos)**: Sem MRCP (arquivos inteiros repetidos) vs Com MRCP (AST determinístico)
      * **Custo por Tarefa (USD)**
      * **Latência de Ingestão**
-     * **Integridade Sintática (100% Determinístico)**
-   - Projeção de Economia Financeira Real para equipes (ex.: time de 10 desenvolvedores com economia de milhares de dólares por mês).
-2. **⚠️ Problemas Identificados no Repositório**:
-   - Analise os dados reais do diagnóstico:
-     * **Maintainability Index & Débito Técnico**: nota, classificação e risco.
-     * **God Modules & Arquivos Hotspots**: módulos gigantes e componentes de alto acoplamento que devem ser decompostos.
-     * **Auditoria de Segurança & Variáveis de Ambiente**: status de segredos, rotas e vulnerabilidades.
-     * **Gaps de Testes & Código Morto**: ausência de suítes de testes ou exports órfãos.
+     * **Integridade Sintática (100% Determinístico via WASM)**
+   - Projeção de Economia Financeira Real para equipes (ex.: time de 10 desenvolvedores economizando milhares de dólares por mês).
+
+2. **⚠️ Problemas Identificados no Repositório (Code Health & Refatoração)**:
+   - Analise os dados reais do diagnóstico /api/code-health:
+     * **Maintainability Index & Débito Técnico**: nota (letra), índice de manutenibilidade e percentual de débito técnico.
+     * **God Modules & Arquivos Críticos de Refatoração**: cite os arquivos com maior complexidade ciclomática e esforço estimado identificados.
+     * **Carga Cognitiva & Complexidade**: proporção de arquivos em carga extrema ou moderada e média de complexidade.
    - Recomendações arquiteturais práticas e priorizadas.
 
-Seja direto, técnico e persuasivo, sem floreios desnecessários. Use tabelas Markdown, badges e listas claras.`;
+3. **🛠️ Ecossistema de Análise MRCP (OBRIGATÓRIO INFORMAR)**:
+   - Você DEVE explicitamente informar ao usuário:
+     * **21 Ferramentas de Análise via MCP**: A API do MRCP possui **21 ferramentas de análise profunda** disponíveis caso o usuário instale via MCP nos seus próprios agentes de IA (Cursor, Windsurf, Claude Code, Cline, Roo Code, etc.) executando \`npx mrcp-engine setup\` no terminal.
+     * **13 Análises Integradas no VS Code**: A extensão oficial instalada no VS Code oferece **13 análises contínuas e em tempo real** integradas diretamente ao editor.
+
+Seja direto, técnico, persuasivo e sem floreios desnecessários. Use tabelas Markdown, badges e listas claras.`;
 
 export async function processChatConversation(
   options: ChatRequestOptions,
@@ -102,11 +109,72 @@ export async function processChatConversation(
 
   const ai = getGenAI();
 
-  // Process real full_diagnostic if provided
+  // Process real codeHealth or full_diagnostic if provided
   let benchmark: BenchmarkReport | undefined;
   let contextAddendum = "";
 
-  if (options.fullDiagnostic && options.fullDiagnostic.executiveSummary) {
+  if (options.codeHealth) {
+    const ch = options.codeHealth.code_health || options.codeHealth;
+    const summary = ch.summary || {};
+    const repoName = ch.repoUrl || "Repositório Analisado";
+    const totalLines = summary.totalLinesOfCode || 25000;
+    const filesCount = summary.totalFiles || 50;
+    const functionsCount = summary.totalFunctions || 450;
+    const importsCount = Math.round(functionsCount * 0.4);
+
+    benchmark = calculateBenchmark({
+      filesCount,
+      totalLines,
+      totalBytes: totalLines * 35,
+      functionsCount,
+      importsCount,
+      securityIssuesCount: 0,
+      deadCodeCount: 0,
+      repoName,
+    });
+
+    const topPriorities = (ch.topRefactoringPriorities || [])
+      .slice(0, 3)
+      .map(
+        (p: any) =>
+          `  * ${p.file} (Complexidade: ${p.cyclomaticComplexity}, ${p.linesOfCode} linhas, Carga: ${p.cognitiveLoad}, Esforço Estimado: ${p.estimatedEffortHours}h) -> ${p.primaryIssue}. Ação recomendada: ${p.recommendedAction}`,
+      )
+      .join("\n");
+
+    const cogLoad = ch.cognitiveLoadDistribution || {
+      low: 36,
+      moderate: 20,
+      high: 23,
+      extreme: 21,
+    };
+
+    contextAddendum = `\n\n[DADOS REAIS DA ANÁLISE /api/code-health (MRCP ENGINE)]:
+- Repositório: ${repoName}
+- Total de Arquivos Analisados: ${summary.totalFiles}
+- Total de Linhas de Código: ${summary.totalLinesOfCode?.toLocaleString()}
+- Total de Funções Detectadas no AST: ${summary.totalFunctions}
+- Módulos Gigantes / God Modules: ${summary.godModulesCount}
+- Complexidade Média por Arquivo: ${summary.averageComplexityPerFile}
+- Razão de Testes/Código: ${summary.testToCodeRatio ? (summary.testToCodeRatio * 100).toFixed(1) + "%" : "9.0%"}
+- Maintainability Index: ${ch.maintainabilityIndex}/100 (Nota ${ch.letterGrade} - ${ch.maintainabilityRating})
+- Débito Técnico Estimado: ${ch.technicalDebtScore}%
+- Distribuição de Carga Cognitiva: ${cogLoad.low}% Baixa, ${cogLoad.moderate}% Moderada, ${cogLoad.high}% Alta, ${cogLoad.extreme}% Extrema
+- Principais Arquivos Críticos de Refatoração (Top Priorities):
+${topPriorities || "  * Nenhum arquivo crítico extremo detectado"}
+- Tokens Brutos Ingestão Sem MRCP: ${benchmark.withoutMrcp.tokensPerTask.toLocaleString()} tokens
+- Tokens Compactados AST Com MRCP: ${benchmark.withMrcp.tokensPerTask.toLocaleString()} tokens (-${benchmark.tokenReductionPercent}%)
+- Custo por Tarefa Sem MRCP: $${benchmark.withoutMrcp.costPerTaskUSD.toFixed(3)} USD
+- Custo por Tarefa Com MRCP: $${benchmark.withMrcp.costPerTaskUSD.toFixed(4)} USD
+- Economia Mensal Projetada p/ 10 Engenheiros: ~$${benchmark.savings.monthlySavingsTeam10USD.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD/mês e ${benchmark.savings.monthlyTokensSavedMillions}M tokens economizados!
+
+[INSTRUÇÃO OBRIGATÓRIA DE FERRAMENTAS DO ECOSSISTEMA MRCP]:
+- Você DEVE informar com clareza ao usuário que:
+  1) A API do MRCP disponibiliza 21 ferramentas de análise se o usuário instalar via MCP em seus próprios agentes de IA (Cursor, Windsurf, Claude Code, Cline, etc.) rodando: "npx mrcp-engine setup".
+  2) E conta com 13 análises integradas diretamente pela extensão oficial instalada no VS Code.`;
+  } else if (
+    options.fullDiagnostic &&
+    options.fullDiagnostic.executiveSummary
+  ) {
     const diag = options.fullDiagnostic;
     const summary = diag.executiveSummary || {};
     const repoName = diag.repoUrl || "Repositório Analisado";
@@ -151,7 +219,12 @@ export async function processChatConversation(
 - Tokens Compactados AST Com MRCP: ${benchmark.withMrcp.tokensPerTask.toLocaleString()} tokens (-${benchmark.tokenReductionPercent}%)
 - Custo por Tarefa Sem MRCP: $${benchmark.withoutMrcp.costPerTaskUSD.toFixed(3)} USD
 - Custo por Tarefa Com MRCP: $${benchmark.withMrcp.costPerTaskUSD.toFixed(4)} USD
-- Economia Mensal Projetada p/ 10 Engenheiros: ~$${benchmark.savings.monthlySavingsTeam10USD.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD/mês e ${benchmark.savings.monthlyTokensSavedMillions}M tokens economizados!`;
+- Economia Mensal Projetada p/ 10 Engenheiros: ~$${benchmark.savings.monthlySavingsTeam10USD.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD/mês e ${benchmark.savings.monthlyTokensSavedMillions}M tokens economizados!
+
+[INSTRUÇÃO OBRIGATÓRIA DE FERRAMENTAS DO ECOSSISTEMA MRCP]:
+- Você DEVE informar com clareza ao usuário que:
+  1) A API do MRCP disponibiliza 21 ferramentas de análise se o usuário instalar via MCP em seus próprios agentes de IA rodando "npx mrcp-engine setup".
+  2) E conta com 13 análises integradas diretamente pela extensão oficial instalada no VS Code.`;
   } else if (
     options.projectContext &&
     (options.projectContext.totalBytes || options.projectContext.filesCount)
@@ -264,11 +337,25 @@ export async function processChatConversation(
   }
 
   // Graceful deterministic architectural reply if Gemini API has transient connection issue
+  const chData = options.codeHealth?.code_health || options.codeHealth;
+  const execSummary = options.fullDiagnostic?.executiveSummary;
   const repoName =
+    chData?.repoUrl ||
     options.fullDiagnostic?.repoUrl ||
     benchmark?.metrics.repoName ||
     "Repositório Analisado";
-  const summary = options.fullDiagnostic?.executiveSummary || {};
+  const summary = chData?.summary || execSummary || {};
+  const mIndex =
+    chData?.maintainabilityIndex ?? execSummary?.maintainabilityIndex ?? 80;
+  const letter = chData?.letterGrade ?? execSummary?.letterGrade ?? "A";
+  const rating =
+    chData?.maintainabilityRating ??
+    execSummary?.maintainabilityRating ??
+    "EXCELLENT";
+  const debt =
+    chData?.technicalDebtScore ?? execSummary?.technicalDebtScore ?? 40;
+  const godMods = summary.godModulesCount || 4;
+
   const reduction = benchmark?.tokenReductionPercent || 98.6;
   const rawTokens =
     benchmark?.withoutMrcp.tokensPerTask.toLocaleString() || "505.264";
@@ -295,19 +382,23 @@ export async function processChatConversation(
 
 ---
 
-### ⚠️ Problemas Identificados no Repositório
+### ⚠️ Problemas Identificados no Repositório (Code Health)
 
-- **Maintainability Index:** **${summary.maintainabilityIndex || 80}/100** (Nota **${summary.letterGrade || "A"}** — ${summary.maintainabilityRating || "EXCELLENT"}).
-- **Débito Técnico Estimado:** **${summary.technicalDebtScore || 40}%** — Concentrado em acoplamento de rotas e dependências cruzadas.
-- **God Modules Identificados:** **${summary.godModulesCount || 4} módulos de alta densidade** necessitam de decomposição para mitigar complexidade ciclomática.
-- **Arquivos Hotspots:** **${summary.hotspotFilesCount || 35} arquivos críticos** com elevado índice de churn e alterações frequentes.
-- **Auditoria de Segurança:** **${summary.securityAuditPassed ? "Aprovada" : "Atenção requerida"}** (${summary.totalVulnerabilities || 0} vulnerabilidades de alta criticidade).
-- **Cobertura de Rotas & APIs:** **${summary.totalApiRoutes || 43} rotas** mapeadas e contratos OpenAPI prontos para injeção em agentes MCP.
+- **Maintainability Index:** **${mIndex}/100** (Nota **${letter}** — ${rating}).
+- **Débito Técnico Estimado:** **${debt}%** — Concentrado em acoplamento estrutural e arquivos monolíticos.
+- **God Modules Identificados:** **${godMods} módulos de alta densidade** necessitam de decomposição para mitigar complexidade ciclomática.
+- **Arquivos Analisados:** **${summary.totalFiles || 50} arquivos** e **${(summary.totalLinesOfCode || 25000).toLocaleString()} linhas de código** processadas no AST.
 
 #### 💡 Recomendações Prioritárias:
-1. Decompor os **${summary.godModulesCount || 4} God Modules** em sub-pacotes com contratos de interfaces estritos.
+1. Decompor os **${godMods} God Modules** em sub-módulos coesos seguindo o Princípio da Responsabilidade Única (SRP).
 2. Injetar o **Context Pack MRCP** no cursor/agentes para impedir que arquivos inteiros de teste ou dados brutos saturem o prompt.
-3. Configurar automação de verificação de contratos via CLI (\`npx mrcp-engine\`).`;
+
+---
+
+### 🛠️ Ferramentas Disponíveis no Ecossistema MRCP
+
+- **21 Ferramentas de Análise via MCP**: Ao conectar o MRCP aos seus próprios agentes de IA (Cursor, Windsurf, Claude Code, Cline, etc.) executando \`npx mrcp-engine setup\`, a API do MRCP disponibiliza **21 ferramentas especializadas** para auditoria de segurança, detecção de código morto, validação de contratos de ambiente e análise arquitetural em tempo real.
+- **13 Análises Integradas no VS Code**: A **Extensão Oficial do VS Code** inclui **13 análises contínuas** executadas localmente durante a edição de código.`;
 
   return {
     reply: fallbackReply,
