@@ -8,6 +8,7 @@ import type {
   Cycle,
 } from "@/lib/graph-types";
 import type { MonorepoConfig } from "./parsers/language.js";
+export type { MonorepoConfig };
 
 export interface AnalysisContext {
   owner: string;

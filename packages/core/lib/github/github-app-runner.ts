@@ -9,7 +9,9 @@ export class GitHubAppRunner {
       authStrategy: createAppAuth,
       auth: {
         appId: process.env.GITHUB_APP_ID,
-        privateKey: process.env.GITHUB_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+        privateKey:
+          process.env.GITHUB_PRIVATE_KEY ||
+          process.env.GITHUB_TOKEN?.replace(/\\n/g, "\n"),
         installationId,
       },
     });

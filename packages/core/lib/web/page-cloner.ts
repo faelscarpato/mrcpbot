@@ -82,7 +82,14 @@ const BROWSER_HEADERS = {
 async function getCheerioInstance() {
   try {
     const mod = await import("cheerio");
-    return mod.default || mod;
+    if ("load" in mod && typeof (mod as { load?: unknown }).load === "function") {
+      return mod;
+    }
+    const def = (mod as { default?: typeof mod }).default;
+    if (def && "load" in def && typeof (def as { load?: unknown }).load === "function") {
+      return def;
+    }
+    return (mod as { default?: typeof mod }).default || mod;
   } catch {
     return null;
   }

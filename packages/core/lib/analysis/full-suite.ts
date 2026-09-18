@@ -1,5 +1,6 @@
 import { runAnalysis } from "./pipeline.js";
-import { processRepositoryHotspots } from "./mrcp-skill-injector.js";
+import type { AnalysisResult } from "./types.js";
+import { processRepositoryHotspots, type ASTNodeMetadata } from "./mrcp-skill-injector.js";
 import { calculateCodeHealth, CodeHealthResult } from "./code-health.js";
 import { runSecurityAudit, SecurityAuditResult } from "./security-audit.js";
 import {
@@ -8,7 +9,7 @@ import {
 } from "./architecture-drift.js";
 import {
   findTestCoverageGaps,
-  TestCoverageGapResult,
+  TestGapAnalysisResult,
 } from "./test-gap-analysis.js";
 import { findDeadCode, DeadCodePrunerResult } from "./dead-code-pruner.js";
 import {
@@ -75,7 +76,7 @@ export interface FullSuiteResult {
     codeHealth?: CodeHealthResult;
     securityAudit?: SecurityAuditResult;
     architectureDrift?: ArchitectureDriftResult;
-    testGaps?: TestCoverageGapResult;
+    testGaps?: TestGapAnalysisResult;
     deadCode?: DeadCodePrunerResult;
     envValidator?: EnvValidatorResult;
     apiContract?: ApiContractResult;
@@ -131,14 +132,15 @@ export async function runFullRepositoryDiagnostic(
         durationMs: duration,
       });
       return res;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const duration = Date.now() - stepStart;
-      console.warn(`[MRCP Suite] ⚠️ Aviso na etapa ${stepName}:`, err.message);
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[MRCP Suite] ⚠️ Aviso na etapa ${stepName}:`, message);
       pipelineStatus.push({
         step: stepName,
         status: "ERROR",
         durationMs: duration,
-        message: err.message,
+        message,
       });
       return null;
     }
@@ -155,7 +157,11 @@ export async function runFullRepositoryDiagnostic(
     },
   );
   reports.astGraph = astResult;
-  const nodes = astResult?.analysis?.nodes || astResult?.nodes || [];
+  type FallbackNodes = { nodes?: ASTNodeMetadata[] };
+  const candidate = astResult as (AnalysisResult & FallbackNodes) | null;
+  const nodes: ASTNodeMetadata[] =
+    candidate?.analysis?.nodes ||
+    (candidate?.nodes && Array.isArray(candidate.nodes) ? candidate.nodes : []);
 
   // 2-13. Execução Paralela Concorrente Ultra-Rápida de todas as ferramentas de diagnóstico
   const [

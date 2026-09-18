@@ -1,5 +1,6 @@
 import { runAnalysis } from "./pipeline.js";
 import { getCachedAnalysis } from "../cache.js";
+export { estimateComplexity } from "./parsers/imports.js";
 
 export interface CodeHealthOptions {
   repoUrl: string;

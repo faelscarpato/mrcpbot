@@ -81,6 +81,15 @@ export async function generateSqlOrmContract(
     if (!fileContent && repoUrl) {
       const candidates = await findRepoFiles(repoUrl, (p) => {
         const lower = p.toLowerCase();
+        if (
+          lower.startsWith("scripts/") ||
+          lower.includes("/scripts/") ||
+          lower.startsWith("test/") ||
+          lower.includes("/test/") ||
+          lower.includes("/tests/")
+        ) {
+          return false;
+        }
         return (
           lower.endsWith(".prisma") ||
           lower.endsWith(".sql") ||
@@ -119,7 +128,7 @@ export async function generateSqlOrmContract(
   }
 
   // 4. Se nenhum schema foi detectado ou o conteúdo é vazio
-  if (detectedType === "NONE" || !fileContent.trim()) {
+  if (detectedType === "NONE" || !fileContent.trim() || !targetFile) {
     return {
       schemaDetected: "NONE",
       schemaFilePath: targetFile,
@@ -147,9 +156,10 @@ export async function generateSqlOrmContract(
         tables = parseSqlDdl(fileContent, targetFile);
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     warnings.push(
-      `Falha ao realizar parse do arquivo de schema '${targetFile}': ${err.message}`,
+      `Falha ao realizar parse do arquivo de schema '${targetFile}': ${message}`,
     );
   }
 

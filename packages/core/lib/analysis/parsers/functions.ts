@@ -16,6 +16,8 @@ export interface ExtractedFunction {
   parameters?: string[];
   isMethod?: boolean;
   className?: string; // For class methods
+  complexity?: number;
+  lines?: number;
 }
 
 import { FUNCTION_PATTERNS } from "./function-patterns.js";
@@ -100,7 +102,7 @@ export function functionsToNodes(functions: ExtractedFunction[]): GraphNode[] {
       label: f.name,
       kind: "function",
       path: fPath,
-      loc: f.lines || 1,
+      loc: f.line || 1,
       complexity: f.complexity || 1,
       group: fPath.split("/").slice(0, -1).join("/") || "root",
       language: f.language,
