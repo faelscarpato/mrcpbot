@@ -5,6 +5,13 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import nlp from "compromise";
 
+export interface SpreadsheetTable {
+  sheetName: string;
+  headers: unknown[];
+  rows: unknown[][];
+  rowCount: number;
+}
+
 export interface DocumentSemanticTree {
   document: string;
   type: string;
@@ -19,7 +26,7 @@ export interface DocumentSemanticTree {
   structure: {
     headers: Array<{ level: number; text: string }>;
     listsCount: number;
-    tables?: any[]; // for spreadsheets
+    tables?: SpreadsheetTable[]; // for spreadsheets
   };
   rawText?: string;
 }
@@ -56,7 +63,13 @@ function extractThemes(text: string): string[] {
 /**
  * Generic metrics computation
  */
-function computeTextMetrics(text: string) {
+function computeTextMetrics(text: string): {
+  wordCount: number;
+  paragraphCount: number;
+  pageCount?: number;
+  rows?: number;
+  columns?: number;
+} {
   const words = text.split(/\s+/).filter((w) => w.trim().length > 0).length;
   const paragraphs = text
     .split(/\n\s*\n/)
@@ -103,10 +116,17 @@ async function parseMarkdown(
   let listsCount = 0;
 
   // Basic AST traversal
-  const traverse = (node: any) => {
+  interface MarkdownNode {
+    type: string;
+    depth?: number;
+    value?: string;
+    children?: MarkdownNode[];
+  }
+
+  const traverse = (node: MarkdownNode) => {
     if (node.type === "heading") {
-      const text = node.children.map((c: any) => c.value).join("");
-      headers.push({ level: node.depth, text });
+      const text = (node.children || []).map((c) => c.value || "").join("");
+      headers.push({ level: node.depth ?? 1, text });
     } else if (node.type === "list") {
       listsCount++;
     }
@@ -115,7 +135,7 @@ async function parseMarkdown(
     }
   };
 
-  traverse(tree);
+  traverse(tree as MarkdownNode);
 
   const metrics = computeTextMetrics(content);
   const themes = extractThemes(content);
@@ -218,7 +238,7 @@ async function parseWord(
 
 function parseSpreadsheet(path: string, buffer: Buffer): DocumentSemanticTree {
   const workbook = xlsx.read(buffer, { type: "buffer" });
-  const tables: any[] = [];
+  const tables: SpreadsheetTable[] = [];
   let totalRows = 0;
   let totalCols = 0;
   let textCorpus = "";
@@ -226,7 +246,7 @@ function parseSpreadsheet(path: string, buffer: Buffer): DocumentSemanticTree {
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
     // Convert to array of arrays to preserve structure
-    const json: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    const json: unknown[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
     if (json.length > 0) {
       const headers = json[0];
@@ -243,7 +263,7 @@ function parseSpreadsheet(path: string, buffer: Buffer): DocumentSemanticTree {
         rowCount: rows - 1,
       });
 
-      textCorpus += json.map((r) => r.join(" ")).join("\n") + "\n";
+      textCorpus += json.map((r) => r.map((c) => String(c ?? "")).join(" ")).join("\n") + "\n";
     }
   }
 
