@@ -53,6 +53,22 @@ export const TOOLS = [
       required: ["repo"],
     },
   },
+  {
+    name: "mrcp_fetch_memory",
+    description:
+      "[Category: Core Engine / Memory] Fetches a previously parsed architectural micro-contract from ephemeral session memory (24h TTL) by its session_id UUID. Use this to retrieve context without re-running AST parsers.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        session_id: {
+          type: "string",
+          description:
+            "The UUID of the ephemeral session returned by a previous analysis tool",
+        },
+      },
+      required: ["session_id"],
+    },
+  },
 
   // --- Category: Predictive & Security Engineering ---
   {
@@ -526,6 +542,75 @@ export const TOOLS = [
           description: "Optional custom skills repository URL",
         },
       },
+    },
+  },
+
+  // --- Category: Governance & Mutation Gate ---
+  {
+    name: "mrcp_gate_change",
+    description:
+      "[Category: Governance & Mutation Gate] Evaluates a proposed code mutation against deterministic architectural and security policies. Returns allow/warn/deny verdict with cryptographic provenance and verifiable AST evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        change: {
+          type: "object",
+          description: "Proposed files and content diffs",
+          properties: {
+            repo: { type: "string" },
+            commit: { type: "string" },
+            files: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  path: { type: "string" },
+                  content: { type: "string" },
+                  added: { type: "number" },
+                  removed: { type: "number" },
+                  complexityDelta: { type: "number" },
+                  hasTests: { type: "boolean" },
+                },
+                required: ["path"],
+              },
+            },
+          },
+          required: ["files"],
+        },
+        policy: {
+          type: "object",
+          description:
+            "Optional policy overrides (maxFiles, forbiddenPaths, requiredTestsFor, maxComplexityDelta, warnComplexityDelta)",
+        },
+      },
+      required: ["change"],
+    },
+  },
+
+  // --- Category: Structural RAG & Architectural Intelligence ---
+  {
+    name: "mrcp_structural_rag_pipeline",
+    description:
+      "[Category: Structural RAG & Architecture] Autonomous architectural reference discovery and blueprint synthesis. Discovers repositories matching query keywords using backend GitHub token, extracts condensed AST micro-contracts (types, routes, ORM models: 50-600 tokens), verifies against Mutation Gate, and saves into ephemeral Supabase memory (24h TTL).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Architectural requirement, stack or pattern to research (e.g. 'jwt auth fastify redis')",
+        },
+        targetStack: {
+          type: "string",
+          description: "Optional specific technology stack constraint",
+        },
+        repoUrl: {
+          type: "string",
+          description:
+            "Optional direct repository URL to synthesize instead of GitHub search",
+        },
+      },
+      required: ["query"],
     },
   },
 ];

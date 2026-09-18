@@ -1,2294 +1,834 @@
-<!DOCTYPE html>
-<html class="dark h-full" lang="pt-BR">
+<!doctype html>
+<html lang="pt-BR">
   <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
-    <title>MRCP 2.6 — Curador de Custos &amp; Benchmark de Tokens</title>
-    <meta
-      name="description"
-      content="Cole o repositório GitHub para podar AST deterministicamente, economizar até 98.7% em tokens e gerar MCP Context Packs instantâneos."
-    />
-    <meta property="og:title" content="MRCP 2.6 — Curador de Custos &amp; Benchmark de Tokens" />
-    <meta
-      property="og:description"
-      content="Análise AST determinística vs. Ingestão bruta de arquivos em LLMs com curador de custos Gemini."
-    />
-
-    <!-- Google Fonts: Geist & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MRCP Engine - Dashboard</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Material Symbols Outlined -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-    <!-- Markdown Parser (marked.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- Tailwind Config matching Deterministic Cyber-Minimalist Design System -->
-    <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              background: "#051424",
-              surface: "#051424",
-              "surface-dim": "#051424",
-              "surface-bright": "#2c3a4c",
-              "surface-container-lowest": "#010f1f",
-              "surface-container-low": "#0d1c2d",
-              "surface-container": "#122131",
-              "surface-container-high": "#1c2b3c",
-              "surface-container-highest": "#273647",
-              "surface-variant": "#273647",
-              "on-surface": "#d4e4fa",
-              "on-surface-variant": "#bbcabf",
-              "inverse-surface": "#d4e4fa",
-              "inverse-on-surface": "#233143",
-              outline: "#86948a",
-              "outline-variant": "#3c4a42",
-              "surface-tint": "#4edea3",
-              primary: "#4edea3",
-              "on-primary": "#003824",
-              "primary-container": "#10b981",
-              "on-primary-container": "#00422b",
-              "inverse-primary": "#006c49",
-              secondary: "#bec6e0",
-              "on-secondary": "#283044",
-              "secondary-container": "#3f465c",
-              "on-secondary-container": "#adb4ce",
-              error: "#ffb4ab",
-              "on-error": "#690005",
-              "error-container": "#93000a",
-              "on-error-container": "#ffdad6"
-            },
-            fontFamily: {
-              sans: ["Geist", "Inter", "system-ui", "-apple-system", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"]
-            }
-          }
-        }
-      };
-    </script>
-
     <style>
-      .material-symbols-outlined {
-        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20;
-        font-size: 18px;
-        line-height: 1;
-        display: inline-flex;
+      :root {
+        --bg: #09090b;
+        --surface: rgba(24, 24, 27, 0.7);
+        --border: #27272a;
+        --primary: #ededed;
+        --muted: #a1a1aa;
+        --accent: #3b82f6;
+        --glass-bg: rgba(9, 9, 11, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Fixed full-height layout */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden;
+        background-color: var(--bg);
+        color: var(--primary);
+        font-family: "Inter", sans-serif;
+        display: flex;
+        flex-direction: column;
+        background-image:
+          radial-gradient(
+            circle at 15% 50%,
+            rgba(59, 130, 246, 0.08) 0%,
+            transparent 25%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(139, 92, 246, 0.08) 0%,
+            transparent 25%
+          );
+      }
+
+      /* Fixed Header */
+      header {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--glass-border);
+        z-index: 10;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin: 0;
+        background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.02em;
+      }
+
+      p.subtitle {
+        color: var(--muted);
+        margin: 0.25rem 0 0 0;
+        font-size: 0.9rem;
+      }
+
+      /* Scrollable main area */
+      main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      .composer {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding-bottom: 100px; /* Space for the footer */
+      }
+
+      .card {
+        background: var(--surface);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 0.35rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+      }
+
+      .tab {
+        flex: 1;
+        padding: 0.6rem;
+        text-align: center;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: inherit;
+      }
+
+      .tab:hover {
+        color: var(--primary);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .tab.active {
+        background: var(--border);
+        color: var(--primary);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .input-group {
+        display: flex;
+        gap: 1rem;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border);
+        color: var(--primary);
+        padding: 0.85rem 1.25rem;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s;
+      }
+
+      input[type="text"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      button.action-btn {
+        background: var(--primary);
+        color: #000;
+        border: none;
+        padding: 0 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      button.action-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+      }
+
+      button.action-btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button.action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .file-upload-wrapper {
+        position: relative;
+        flex: 1;
+      }
+
+      .file-upload-label {
+        display: flex;
         align-items: center;
         justify-content: center;
-        vertical-align: middle;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px dashed var(--muted);
+        color: var(--muted);
+        padding: 0.85rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+        height: 100%;
+        box-sizing: border-box;
       }
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
+
+      .file-upload-label:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(255, 255, 255, 0.02);
       }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #1c2b3c;
-        border-radius: 9999px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #273647;
-      }
-      .composer-glow:focus-within {
-        box-shadow: 0 0 0 1px #4edea3, 0 10px 30px -10px rgba(78, 222, 163, 0.2);
-      }
-      .no-scrollbar::-webkit-scrollbar {
+
+      input[type="file"] {
         display: none;
       }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .pt-safe {
-        padding-top: env(safe-area-inset-top, 0px);
-      }
-      .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-      }
-      @keyframes pulse-gentle {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-      .animate-pulse-subtle {
-        animation: pulse-gentle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fadeIn {
-        animation: fadeIn 0.25s ease-out forwards;
-      }
-      .spinner {
-        display: inline-block;
-        width: 14px;
-        height: 14px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-left-color: #4edea3;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      .prose-mrcp table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 12px 0;
-        font-size: 12px;
-        background: #0d1c2d;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #1c2b3c;
-      }
-      .prose-mrcp th {
-        background: #010f1f;
-        color: #4edea3;
+
+      /* JSON Result Editor Styling */
+      pre {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
         font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        color: #a6accd;
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .result-title {
+        font-size: 1rem;
+        margin: 0 0 1rem 0;
         font-weight: 600;
-        padding: 8px 12px;
-        text-align: left;
-        border-bottom: 1px solid #1c2b3c;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
-      .prose-mrcp td {
-        padding: 8px 12px;
-        border-bottom: 1px solid #17283c;
-        color: #d4e4fa;
+
+      .badge {
+        background: var(--border);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        color: var(--muted);
       }
-      .prose-mrcp tr:last-child td {
-        border-bottom: none;
+
+      /* Fixed Footer */
+      footer {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        border-top: 1px solid var(--glass-border);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        box-sizing: border-box;
+        z-index: 20;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .prose-mrcp tr:hover {
-        background: rgba(78, 222, 163, 0.04);
+
+      footer.visible {
+        transform: translateY(0);
       }
-      .prose-mrcp h2, .prose-mrcp h3, .prose-mrcp h4, .prose-mrcp h5 {
-        color: #ffffff;
-        font-weight: 700;
-        margin-top: 14px;
-        margin-bottom: 6px;
+
+      .footer-content {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      .prose-mrcp ul, .prose-mrcp ol {
-        margin: 8px 0;
-        padding-left: 20px;
+
+      .footer-title {
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 0.9rem;
       }
-      .prose-mrcp li {
-        margin-bottom: 4px;
+
+      .export-actions {
+        display: flex;
+        gap: 0.5rem;
       }
-      .prose-mrcp hr {
-        border: 0;
-        border-top: 1px solid #1c2b3c;
-        margin: 14px 0;
-      }
-      .prose-mrcp pre {
-        background: #010f1f;
-        border: 1px solid #1c2b3c;
+
+      .export-btn {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary);
+        border: 1px solid var(--border);
+        padding: 0.5rem 1rem;
         border-radius: 8px;
-        padding: 12px;
-        overflow-x: auto;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        margin: 10px 0;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-family: inherit;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
-      .prose-mrcp code {
-        font-family: "JetBrains Mono", monospace;
-        background: #122131;
-        padding: 2px 5px;
-        border-radius: 4px;
-        font-size: 11px;
-        color: #4edea3;
+
+      .export-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--muted);
+      }
+
+      .export-btn.graph-btn {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+      }
+
+      .export-btn.graph-btn:hover {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: #3b82f6;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .loader {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-left-color: #000;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* JSON Syntax Highlighting */
+      .string {
+        color: #89ddff;
+      }
+      .number {
+        color: #f78c6c;
+      }
+      .boolean {
+        color: #ff5370;
+      }
+      .null {
+        color: #ff5370;
+      }
+      .key {
+        color: #c3e88d;
       }
     </style>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-HSQM4Q77P6"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-HSQM4Q77P6");
+    </script>
   </head>
+  <body>
+    <header>
+      <h1>MRCP Engine</h1>
+      <p class="subtitle">Análise arquitetural estruturada para Agentes IA</p>
+    </header>
 
-  <body class="bg-[#051424] text-[#d4e4fa] font-sans antialiased h-screen overflow-hidden flex selection:bg-[#4edea3] selection:text-[#003824]">
-    <!-- ========================================================= -->
-    <!-- 1. MOBILE NAVIGATION DRAWER (OFF-CANVAS FOR MOBILE) -->
-    <!-- ========================================================= -->
-    <aside
-      id="sidebar-drawer"
-      class="fixed inset-0 z-50 pointer-events-none transition-all duration-300 ease-in-out opacity-0 md:hidden"
-    >
-      <div
-        id="drawer-backdrop"
-        class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity opacity-0 pointer-events-auto"
-      ></div>
-      <div
-        id="drawer-panel"
-        class="relative w-4/5 max-w-[320px] h-full bg-[#010f1f] border-r border-[#17283c] flex flex-col justify-between p-5 -translate-x-full transition-transform duration-300 ease-out shadow-2xl pointer-events-auto z-10 pt-safe pb-safe"
-      >
-        <div class="space-y-6">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3]">
-                <span class="material-symbols-outlined text-[18px]">bolt</span>
-              </div>
-              <div>
-                <span class="text-sm font-bold tracking-tight text-white block">MRCP 2.6</span>
-                <span class="inline-flex items-center text-[10px] text-[#4edea3] font-medium font-mono">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3] mr-1 animate-pulse"></span> AST Active
-                </span>
-              </div>
-            </div>
-            <button id="close-drawer-btn" class="p-1.5 text-slate-400 hover:text-white rounded-lg active:bg-[#0d1c2d]">
-              <span class="material-symbols-outlined text-[20px]">close</span>
-            </button>
+    <main>
+      <div class="composer">
+        <div class="card">
+          <div class="tabs">
+            <button class="tab active" data-mode="github">GitHub</button>
+            <button class="tab" data-mode="web">Website</button>
+            <button class="tab" data-mode="local">Pasta Local</button>
           </div>
 
-          <!-- Botão Nova Análise -->
-          <button
-            onclick="startNewAnalysis(); closeDrawer();"
-            class="w-full py-2.5 px-3.5 bg-[#0d1c2d] hover:bg-[#13283f] border border-[#17283c] rounded-xl text-left text-xs font-semibold text-slate-200 flex items-center justify-between transition-colors shadow-sm active:scale-[0.98]"
-          >
-            <span class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[18px] text-[#4edea3]">add</span>
-              Nova Análise
-            </span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#071626] border border-[#1a334d] text-slate-400 font-mono">⌘K</span>
-          </button>
-
-          <!-- Repositórios Recentes -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between px-1">
-              <p class="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-semibold">Repositórios Recentes</p>
-              <button
-                id="mobile-clear-recent-btn"
-                onclick="clearRecentRepos()"
-                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors hidden"
-                title="Limpar histórico recente"
-              >
-                Limpar
-              </button>
-            </div>
-            <div id="mobile-recent-repos" class="space-y-1">
-              <!-- Renderizado dinamicamente via localStorage -->
-            </div>
-          </div>
-        </div>
-
-        <div class="border-t border-[#17283c] pt-4 space-y-2">
-          <!-- Botão Configurar IA & Chaves (Mobile) -->
-          <button
-            onclick="openAiSettingsModal(); closeDrawer();"
-            class="w-full flex items-center justify-between px-2.5 py-2 text-[#4edea3] hover:bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-xl transition-all text-left font-medium text-xs shadow-sm"
-          >
-            <span class="flex items-center space-x-2">
-              <span class="material-symbols-outlined text-[17px]">tune</span>
-              <span>Configurar IA &amp; Chaves</span>
-            </span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#4edea3]/20 text-[#4edea3]" id="mobile-sidebar-provider-tag">Gemini</span>
-          </button>
-
-          <nav class="space-y-1 text-xs">
-            <a
-              href="https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode"
-              target="_blank"
-              rel="noopener"
-              class="flex items-center gap-2.5 py-1.5 px-2 text-slate-300 hover:text-white rounded transition-colors"
-            >
-              <span class="material-symbols-outlined text-[16px] text-slate-400">extension</span>
-              <span>Extensão VS Code</span>
-            </a>
-            <button
-              onclick="copyToClipboard('npx mrcp-engine setup', this)"
-              class="w-full flex items-center justify-between py-1.5 px-2 text-slate-300 hover:text-white rounded transition-colors text-left"
-            >
-              <span class="flex items-center gap-2.5">
-                <span class="material-symbols-outlined text-[16px] text-slate-400">terminal</span>
-                <span>Setup MCP CLI</span>
-              </span>
-              <span class="material-symbols-outlined text-[14px] text-slate-500">content_copy</span>
-            </button>
-            <a
-              href="https://github.com/faelscarpato/mrcp-engine"
-              target="_blank"
-              rel="noopener"
-              class="flex items-center gap-2.5 py-1.5 px-2 text-slate-300 hover:text-white rounded transition-colors"
-            >
-              <span class="material-symbols-outlined text-[16px] text-slate-400">menu_book</span>
-              <span>Documentação</span>
-            </a>
-          </nav>
-          <div class="pt-2 border-t border-[#17283c]/60 flex items-center justify-between text-[11px] font-mono text-slate-500">
-            <span>v2.6.4 Deterministic</span>
-            <span class="flex items-center gap-1.5 text-[#4edea3] font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span> Ready
-            </span>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ========================================================= -->
-    <!-- 2. DESKTOP SIDEBAR (EXACT MATCH FOR desktop_screen.png) -->
-    <!-- ========================================================= -->
-    <aside
-      id="sidebar"
-      class="hidden md:flex w-64 bg-[#010f1f] border-r border-[#1c2b3c] flex-col justify-between transition-all duration-300 z-40 flex-shrink-0 h-full"
-    >
-      <div class="p-3.5 flex flex-col space-y-3">
-        <!-- Marca & Botão Toggle -->
-        <div class="flex items-center justify-between px-1.5 pt-0.5">
-          <div class="flex items-center space-x-2">
-            <div class="w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3] font-mono text-xs font-bold">
-              <span class="material-symbols-outlined text-[18px]">bolt</span>
-            </div>
-            <div class="flex flex-col">
-              <span class="text-sm font-bold tracking-tight text-white">MRCP 2.6</span>
-              <span class="text-[10px] text-[#4edea3] font-mono leading-tight flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse"></span> AST Active
-              </span>
-            </div>
-          </div>
-          <button
-            onclick="toggleSidebar()"
-            class="p-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors"
-            title="Recolher Barra Lateral"
-          >
-            <span class="material-symbols-outlined text-[18px]">view_sidebar</span>
-          </button>
-        </div>
-
-        <!-- Botão Nova Análise -->
-        <button
-          onclick="startNewAnalysis()"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#122131] hover:bg-[#1c2b3c] border border-[#1c2b3c] text-white text-xs font-medium transition-all group shadow-sm"
-        >
-          <div class="flex items-center space-x-2">
-            <span class="material-symbols-outlined text-[#4edea3] group-hover:rotate-90 transition-transform text-[18px]">add</span>
-            <span>Nova Análise</span>
-          </div>
-          <kbd class="text-[10px] font-mono text-[#bec6e0] bg-[#0d1c2d] px-1.5 py-0.5 rounded border border-[#1c2b3c]">⌘K</kbd>
-        </button>
-
-        <!-- Histórico Recente -->
-        <div class="pt-2">
-          <div class="flex items-center justify-between px-2 pb-1.5">
-            <div class="text-[11px] font-mono font-semibold tracking-wider text-[#bec6e0]/70 uppercase">
-              Repositórios Recentes
-            </div>
-            <button
-              id="desktop-clear-recent-btn"
-              onclick="clearRecentRepos()"
-              class="text-[10px] text-slate-500 hover:text-red-400 transition-colors hidden"
-              title="Limpar histórico recente"
-            >
-              Limpar
-            </button>
-          </div>
-          <div id="desktop-recent-repos" class="space-y-1">
-            <!-- Renderizado dinamicamente via localStorage -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Rodapé Discreto da Sidebar -->
-      <div class="p-3 border-t border-[#1c2b3c] space-y-1 text-xs">
-        <button
-          onclick="openAiSettingsModal()"
-          class="w-full flex items-center justify-between px-2.5 py-2 text-[#4edea3] hover:bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-xl transition-all text-left font-medium text-xs mb-1 shadow-sm"
-        >
-          <span class="flex items-center space-x-2">
-            <span class="material-symbols-outlined text-[16px]">tune</span>
-            <span>Configurar IA &amp; Chaves</span>
-          </span>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#4edea3]/20 text-[#4edea3]" id="desktop-sidebar-provider-tag">Gemini</span>
-        </button>
-        <a
-          href="https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode"
-          target="_blank"
-          rel="noopener"
-          class="flex items-center space-x-2 px-2 py-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors"
-        >
-          <span class="material-symbols-outlined text-[16px]">extension</span>
-          <span>Extensão VS Code</span>
-        </a>
-        <button
-          onclick="copyToClipboard('npx mrcp-engine setup', this)"
-          class="w-full flex items-center justify-between px-2 py-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors text-left"
-        >
-          <span class="flex items-center space-x-2">
-            <span class="material-symbols-outlined text-[16px]">terminal</span>
-            <span>Setup MCP CLI</span>
-          </span>
-          <span class="material-symbols-outlined text-[13px] opacity-70">content_copy</span>
-        </button>
-        <a
-          href="https://github.com/faelscarpato/mrcp-engine"
-          target="_blank"
-          rel="noopener"
-          class="flex items-center space-x-2 px-2 py-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors"
-        >
-          <span class="material-symbols-outlined text-[16px]">menu_book</span>
-          <span>Documentação</span>
-        </a>
-        <div class="pt-2 mt-1 border-t border-[#1c2b3c]/60 flex items-center justify-between px-2 text-[11px] font-mono text-[#bec6e0]/70">
-          <span>v2.6.4 Deterministic</span>
-          <span class="inline-flex items-center gap-1 text-[#4edea3]">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span> Ready
-          </span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ========================================================= -->
-    <!-- 3. ÁREA PRINCIPAL DE TRABALHO & CHAT -->
-    <!-- ========================================================= -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#051424]">
-      <!-- Header Superior (Fiel a desktop_screen.png & mobilescreen.png) -->
-      <header class="pt-safe h-13 px-4 sm:px-6 py-2.5 border-b border-[#1c2b3c] flex items-center justify-between bg-[#051424]/90 backdrop-blur sticky top-0 z-30 flex-shrink-0">
-        <div class="flex items-center space-x-3">
-          <!-- Botão Hamburger (Abre drawer em mobile ou expande sidebar em desktop se colapsada) -->
-          <button
-            id="sidebar-toggle-btn"
-            onclick="handleHeaderMenuClick()"
-            class="p-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors"
-            title="Menu"
-          >
-            <span class="material-symbols-outlined text-[18px]">menu</span>
-          </button>
-
-          <!-- Mobile App Logo (Exibido apenas em mobile como na imagem mobilescreen.png) -->
-          <div class="flex md:hidden items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center">
-              <span class="material-symbols-outlined text-[16px] text-[#4edea3]">bolt</span>
-            </div>
-            <span class="font-bold text-sm tracking-tight text-white">MRCP</span>
-            <span class="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#4edea3]/10 border border-[#4edea3]/25 text-[#4edea3] font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse"></span> AST
-            </span>
-          </div>
-
-          <!-- Seletor do Provedor de IA Ativo & Botão de Configuração -->
-          <button
-            id="header-ai-config-btn"
-            onclick="openAiSettingsModal()"
-            class="flex items-center space-x-2 bg-[#0d1c2d] hover:bg-[#122131] border border-[#1c2b3c] hover:border-[#4edea3]/40 rounded-full px-3 py-1 cursor-pointer transition-all text-xs group"
-            title="Clique para configurar chave de API ou alternar provedor (Gemini, ChatGPT, Claude, Nvidia, Custom)"
-          >
-            <span class="w-2 h-2 rounded-full bg-[#4edea3] group-hover:scale-125 transition-transform"></span>
-            <span class="font-mono font-medium text-white" id="current-model-label">Gemini · gemini-2.5-flash</span>
-            <span class="material-symbols-outlined text-[14px] text-[#4edea3]">tune</span>
-          </button>
-        </div>
-
-        <!-- Trailing Status & Info -->
-        <div class="flex items-center space-x-2 text-xs text-[#bec6e0]">
-          <!-- Mobile '+' New analysis button (como em mobilescreen.png) -->
-          <button
-            onclick="startNewAnalysis()"
-            class="flex md:hidden p-1.5 rounded-full text-slate-300 bg-[#0d1c2d] border border-[#1c2b3c] hover:text-white"
-            title="Nova Análise"
-          >
-            <span class="material-symbols-outlined text-[16px]">add</span>
-          </button>
-
-          <span class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#0d1c2d] border border-[#1c2b3c] text-[#bec6e0]">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span> AST Deterministic Online
-          </span>
-          <button
-            onclick="copyToClipboard('https://mrcp-engine.vercel.app/api/mcp', this)"
-            class="p-1.5 text-[#bec6e0] hover:text-white hover:bg-[#122131] rounded-lg transition-colors flex items-center space-x-1"
-            title="Copiar Endpoint MCP Universal"
-          >
-            <span class="material-symbols-outlined text-[16px] text-[#4edea3]">hub</span>
-            <span class="hidden sm:inline text-xs">MCP Endpoint</span>
-          </button>
-        </div>
-      </header>
-
-      <!-- Chat & Content Scrollable Area -->
-      <div
-        id="chat-scroll-area"
-        class="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 md:px-12 lg:px-20 py-6 flex flex-col justify-start"
-      >
-        <!-- ========================================================= -->
-        <!-- ESTADO INICIAL HERO (FIDELIDADE ABSOLUTA AO DESIGN) -->
-        <!-- ========================================================= -->
-        <div
-          id="welcome-view"
-          class="my-auto max-w-3xl mx-auto w-full flex flex-col items-center text-center space-y-6 pt-4 pb-12 transition-opacity duration-300"
-        >
-          <!-- Geometric Center Icon with Radiant Glow -->
-          <div class="relative mx-auto w-14 h-14 flex items-center justify-center">
-            <div class="absolute inset-0 bg-[#4edea3]/20 rounded-2xl blur-lg animate-pulse-subtle"></div>
-            <div class="relative w-14 h-14 rounded-2xl bg-[#0d1c2d] border border-[#1c2b3c] flex items-center justify-center shadow-inner">
-              <span class="material-symbols-outlined text-[30px] text-[#4edea3]">query_stats</span>
-            </div>
-          </div>
-
-          <!-- Main Catchphrase Title -->
-          <div class="space-y-2">
-            <h1 class="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
-              O que vamos auditar hoje?
-            </h1>
-            <p class="text-[#bec6e0] text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed">
-              Cole o repositório GitHub para podar AST deterministicamente, economizar até 98.7% em tokens e gerar MCP Context Packs instantâneos.
-            </p>
-          </div>
-
-          <!-- Composer Centralizado Hero (Fiel a desktop_screen.png e mobilescreen.png) -->
-          <div class="w-full max-w-2xl mt-2">
-            <div class="bg-[#0a1929] border border-[#17283c] rounded-2xl p-2 sm:p-2.5 shadow-xl composer-glow transition-all">
-              <form class="flex flex-col space-y-2" onsubmit="handleHeroSubmit(event)">
-                <div class="flex items-center px-2">
-                  <span class="material-symbols-outlined text-[#4edea3] text-[20px] mr-2">account_tree</span>
-                  <input
-                    type="text"
-                    id="hero-input"
-                    class="w-full bg-transparent border-none text-xs sm:text-sm font-mono text-white placeholder:text-slate-500 focus:ring-0 focus:outline-none"
-                    placeholder="https://github.com/faelscarpato/mrcp-engine"
-                    value="https://github.com/faelscarpato/mrcp-engine"
-                  />
-                  <button
-                    type="submit"
-                    id="hero-submit-btn"
-                    class="w-9 h-9 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] flex items-center justify-center font-bold transition-all flex-shrink-0 shadow-sm ml-2 active:scale-95"
-                    title="Iniciar Análise AST"
-                  >
-                    <span id="hero-submit-icon" class="material-symbols-outlined text-[20px] font-bold">arrow_upward</span>
-                  </button>
-                </div>
-
-                <!-- Presets Rápidos no Rodapé do Composer -->
-                <div class="flex items-center justify-between pt-2 border-t border-[#17283c] px-2 text-xs">
-                  <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                    <span class="text-[11px] font-mono text-slate-400 mr-1 uppercase tracking-wider">Presets:</span>
-                    <button
-                      type="button"
-                      onclick="setHeroPreset('faelscarpato/mrcp-engine')"
-                      class="px-2.5 py-1 rounded-lg bg-[#0d1c2d] border border-[#17283c] text-[#4edea3] hover:border-[#4edea3]/50 text-[11px] font-mono whitespace-nowrap transition-colors"
-                    >
-                      faelscarpato/mrcp-engine
-                    </button>
-                    <button
-                      type="button"
-                      onclick="setHeroPreset('expressjs/express')"
-                      class="px-2.5 py-1 rounded-lg bg-[#0d1c2d] border border-[#17283c] text-slate-300 hover:text-white text-[11px] font-mono whitespace-nowrap transition-colors"
-                    >
-                      expressjs
-                    </button>
-                    <button
-                      type="button"
-                      onclick="setHeroPreset('facebook/react')"
-                      class="px-2.5 py-1 rounded-lg bg-[#0d1c2d] border border-[#17283c] text-slate-300 hover:text-white text-[11px] font-mono whitespace-nowrap transition-colors"
-                    >
-                      react
-                    </button>
-                    <button
-                      type="button"
-                      onclick="setHeroPreset('fastapi/fastapi')"
-                      class="px-2.5 py-1 rounded-lg bg-[#0d1c2d] border border-[#17283c] text-slate-300 hover:text-white text-[11px] font-mono whitespace-nowrap transition-colors"
-                    >
-                      fastapi
-                    </button>
-                  </div>
-                  <span class="text-[11px] font-mono text-[#4edea3] hidden sm:inline-flex items-center whitespace-nowrap pl-2">
-                    ⚡ AST Determinístico
-                  </span>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- 3 Feature Highlights Minimalistas (Exatamente como nas capturas) -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl text-left pt-2">
-            <!-- Card 1: -98.7% de Tokens -->
-            <div class="p-3.5 rounded-xl bg-[#0a1929] border border-[#17283c] flex sm:flex-col items-start gap-2.5 shadow-sm">
-              <div class="text-[#4edea3] text-xs font-semibold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[17px]">tune</span>
-                <span>-98.7% de Tokens</span>
-              </div>
-              <p class="text-[11px] text-slate-400 leading-snug">
-                Poda corpos de código internos e mantém apenas assinaturas de interface estritas.
-              </p>
-            </div>
-
-            <!-- Card 2: Economia Real -->
-            <div class="p-3.5 rounded-xl bg-[#0a1929] border border-[#17283c] flex sm:flex-col items-start gap-2.5 shadow-sm">
-              <div class="text-[#4edea3] text-xs font-semibold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[17px]">savings</span>
-                <span class="text-white">Economia Real</span>
-                <span class="text-[9px] px-1 py-0.2 bg-[#4edea3]/20 text-[#4edea3] rounded font-mono font-normal">ROI</span>
-              </div>
-              <p class="text-[11px] text-slate-400 leading-snug">
-                Reduz gastos médios mensais de <span class="text-slate-200 font-mono">~$3.840</span> para apenas <span class="text-[#4edea3] font-mono font-medium">~$46</span> por equipe de 10 engenheiros.
-              </p>
-            </div>
-
-            <!-- Card 3: Zero Alucinações -->
-            <div class="p-3.5 rounded-xl bg-[#0a1929] border border-[#17283c] flex sm:flex-col items-start gap-2.5 shadow-sm">
-              <div class="text-[#4edea3] text-xs font-semibold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[17px]">verified</span>
-                <span class="text-white">Zero Alucinações</span>
-              </div>
-              <p class="text-[11px] text-slate-400 leading-snug">
-                100% de integridade sintática e compatibilidade com Model Context Protocol (MCP).
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ========================================================= -->
-        <!-- CONVERSATION THREAD (DISPARADO AUTOMATICAMENTE NA ANÁLISE) -->
-        <!-- ========================================================= -->
-        <div id="thread-container" class="hidden w-full max-w-3xl mx-auto space-y-6 pb-28">
-          <!-- Mensagens geradas dinamicamente aparecerão aqui -->
-        </div>
-      </div>
-
-      <!-- Micro Status Footer (Visível em Mobile como em mobilescreen.png) -->
-      <div class="flex md:hidden border-t border-[#13253b] px-4 py-2 text-[10px] text-slate-400 justify-between items-center bg-[#010f1f]/80 font-mono shrink-0">
-        <div class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span>
-          <span>AST Deterministic Online</span>
-        </div>
-        <div class="flex items-center gap-1 text-slate-400">
-          <span class="material-symbols-outlined text-[14px] text-[#4edea3]">hub</span>
-          <span>MCP Endpoint</span>
-        </div>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- 4. COMPOSER FIXO NA BASE (ATIVO DURANTE A CONVERSA) -->
-      <!-- ========================================================= -->
-      <div
-        id="bottom-composer-wrapper"
-        class="hidden absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[#051424] via-[#051424]/95 to-transparent pointer-events-none z-20"
-      >
-        <div class="max-w-3xl mx-auto w-full pointer-events-auto">
-          <form
-            onsubmit="handleBottomSubmit(event)"
-            class="bg-[#0a1929] border border-[#17283c] rounded-2xl p-2 sm:p-2.5 shadow-2xl composer-glow transition-all flex items-center space-x-2"
-          >
+          <!-- Form para URL (Github/Web) -->
+          <div class="input-group" id="url-input-group">
             <input
               type="text"
-              id="bottom-input"
-              class="w-full bg-transparent border-none text-xs sm:text-sm text-white placeholder:text-slate-500 focus:ring-0 focus:outline-none px-3 font-sans"
-              placeholder="Pergunte sobre custos de contexto, poda AST de funções ou integração MCP..."
+              id="url-input"
+              placeholder="https://github.com/facebook/react"
+              autocomplete="off"
             />
-            <button
-              type="submit"
-              id="bottom-submit-btn"
-              class="w-8 h-8 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] flex items-center justify-center font-bold transition-all flex-shrink-0 active:scale-95"
-            >
-              <span id="bottom-submit-icon" class="material-symbols-outlined text-[18px]">arrow_upward</span>
-            </button>
-          </form>
-          <div class="text-center text-[11px] text-slate-400/80 mt-1.5 font-mono">
-            MRCP Engine v2.6 pode processar repositórios locais via
-            <code class="text-[#4edea3]">npx mrcp-engine</code>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- MODAL 1: ONBOARDING MRCP & 3 FRENTES DE USO -->
-    <!-- ========================================================= -->
-    <div
-      id="onboarding-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md transition-opacity duration-300 hidden"
-    >
-      <div
-        class="bg-[#071728] border border-[#1d2f44] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn"
-      >
-        <!-- Modal Top Bar -->
-        <div class="px-6 py-4 border-b border-[#17283c] flex items-center justify-between bg-[#040e1a]/80">
-          <div class="flex items-center space-x-2">
-            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3]">
-              <span class="material-symbols-outlined text-[18px]">bolt</span>
-            </span>
-            <span class="font-mono text-xs font-semibold text-[#4edea3] tracking-wide uppercase">MRCP Engine 2.6 · Governança AST</span>
-          </div>
-          <button
-            onclick="closeOnboardingModal()"
-            class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#13253b] transition-colors"
-            title="Fechar"
-          >
-            <span class="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
-
-        <!-- Modal Body com Frase de Impacto e 3 Frentes -->
-        <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
-          <!-- Frase de Impacto Principal -->
-          <div class="space-y-2">
-            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
-              Reduza até <span class="text-[#4edea3] underline decoration-[#4edea3]/30 underline-offset-4">98% dos custos de tokens</span> e elimine alucinações de IA com Contexto AST Determinístico.
-            </h2>
-            <p class="text-xs sm:text-sm text-[#a8b8cc] leading-relaxed">
-              O MRCP (Machine-Readable Context Protocol) resolve o gargalo de contexto em larga escala, substituindo despejos brutos de arquivos por árvores de sintaxe e grafos de dependências cirúrgicos em 3 frentes unificadas:
-            </p>
+            <button class="action-btn" id="analyze-url-btn">Analisar</button>
           </div>
 
-          <!-- As 3 Frentes de Uso do MRCP -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- 1. REST API Core -->
-            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">api</span>
-                  </span>
-                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">CI/CD &amp; API</span>
-                </div>
-                <h3 class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">1. REST API Core</h3>
-                <p class="text-xs text-[#94a3b8] leading-relaxed">
-                  Endpoints de alta performance (<code class="text-blue-300 text-[11px]">/api/code-health</code>, <code class="text-blue-300 text-[11px]">/api/context-pack</code>) para pipelines de CI/CD, esteiras de código e integrações via cURL/HTTP.
-                </p>
-              </div>
-              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-blue-400">
-                ⚡ Microserviço Nativo
-              </div>
-            </div>
-
-            <!-- 2. MCP Protocol Server -->
-            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="w-8 h-8 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3] flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">hub</span>
-                  </span>
-                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/30">21 Ferramentas</span>
-                </div>
-                <h3 class="text-sm font-bold text-white group-hover:text-[#4edea3] transition-colors">2. MCP Protocol Server</h3>
-                <p class="text-xs text-[#94a3b8] leading-relaxed">
-                  Servidor Model Context Protocol nativo com 21 ferramentas de análise e refatoração direta para Cursor, Windsurf, Claude Code e Cline via <code class="text-[#4edea3] text-[11px]">npx mrcp-engine setup</code>.
-                </p>
-              </div>
-              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-[#4edea3]">
-                🤖 Agentes de IA
-              </div>
-            </div>
-
-            <!-- 3. Extensão VS Code -->
-            <div class="p-4 rounded-xl bg-[#0b1b2d] border border-[#1a2c42] hover:border-[#4edea3]/40 transition-colors flex flex-col justify-between group">
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">extension</span>
-                  </span>
-                  <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">13 Análises</span>
-                </div>
-                <h3 class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">3. Extensão VS Code</h3>
-                <p class="text-xs text-[#94a3b8] leading-relaxed">
-                  13 análises contínuas em tempo real integradas diretamente ao editor: God Modules, acoplamento e poda AST antes do envio para qualquer LLM.
-                </p>
-              </div>
-              <div class="mt-3 pt-2 border-t border-[#1a2c42]/60 text-[11px] font-mono text-purple-400">
-                💻 No Editor
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-[#17283c] bg-[#040e1a]/90 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <button
-            onclick="skipOnboardingAndExplore()"
-            class="text-xs text-slate-400 hover:text-white transition-colors order-2 sm:order-1"
-          >
-            Explorar com Chave Demonstrativa
-          </button>
-          <button
-            onclick="openAiSettingsFromOnboarding()"
-            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-[#10b981]/25 transition-all active:scale-95 order-1 sm:order-2"
-          >
-            <span>Configurar Minha Própria IA</span>
-            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- MODAL 2: CONFIGURAÇÃO DE IA MULTI-PROVEDOR -->
-    <!-- ========================================================= -->
-    <div
-      id="ai-settings-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md transition-opacity duration-300 hidden"
-    >
-      <div
-        class="bg-[#071728] border border-[#1d2f44] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn"
-      >
-        <!-- Modal Top Bar -->
-        <div class="px-6 py-4 border-b border-[#17283c] flex items-center justify-between bg-[#040e1a]/80">
-          <div class="flex items-center space-x-2">
-            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/30 text-[#4edea3]">
-              <span class="material-symbols-outlined text-[18px]">tune</span>
-            </span>
-            <div>
-              <span class="font-bold text-sm text-white block">Configuração do Provedor de IA</span>
-              <span class="text-[11px] text-slate-400">Conecte sua própria chave de API para controle total de limites e custos</span>
-            </div>
-          </div>
-          <button
-            onclick="closeAiSettingsModal()"
-            class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#13253b] transition-colors"
-            title="Fechar"
-          >
-            <span class="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
-
-        <!-- Provider Selection Tabs -->
-        <div class="px-6 pt-3 pb-0 bg-[#06121f] border-b border-[#17283c] flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <button
-            id="tab-btn-gemini"
-            type="button"
-            onclick="switchProviderTab('gemini')"
-            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-[#4edea3] border-[#4edea3] bg-[#0c1e33]"
-          >
-            <span>Google Gemini</span>
-            <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-[#4edea3]/15 text-[#4edea3]">Pré-configurado</span>
-          </button>
-          <button
-            id="tab-btn-openai"
-            type="button"
-            onclick="switchProviderTab('openai')"
-            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
-          >
-            <span>ChatGPT (OpenAI)</span>
-          </button>
-          <button
-            id="tab-btn-claude"
-            type="button"
-            onclick="switchProviderTab('claude')"
-            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
-          >
-            <span>Claude (Anthropic)</span>
-          </button>
-          <button
-            id="tab-btn-nvidia"
-            type="button"
-            onclick="switchProviderTab('nvidia')"
-            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
-          >
-            <span>NVIDIA NIM</span>
-          </button>
-          <button
-            id="tab-btn-custom"
-            type="button"
-            onclick="switchProviderTab('custom')"
-            class="px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50"
-          >
-            <span class="material-symbols-outlined text-[15px]">dns</span>
-            <span>Custom Provedor</span>
-          </button>
-        </div>
-
-        <!-- Provider Content Panes -->
-        <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
-          <!-- Banner de Status & Privacidade -->
-          <div class="p-3 rounded-xl bg-[#091829] border border-[#1a2c42] flex items-center justify-between text-xs text-slate-300">
-            <div class="flex items-center space-x-2">
-              <span class="material-symbols-outlined text-[18px] text-[#4edea3]">lock</span>
-              <span>Sua chave é salva localmente no navegador (<code class="text-[#4edea3]">localStorage</code>) e enviada somente para suas inferências.</span>
-            </div>
-          </div>
-
-          <!-- PANE: GEMINI -->
-          <div id="pane-gemini" class="space-y-4">
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-medium text-slate-200">Chave de API Gemini (Google AI Studio)</label>
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
-                >
-                  <span>Obter chave gratuita no AI Studio</span>
-                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
-                </a>
-              </div>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="gemini-api-key"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
-                  placeholder="AIzaSy..."
-                  oninput="handleApiKeyChangeDebounced('gemini')"
-                />
-                <button
-                  type="button"
-                  onclick="togglePasswordVisibility('gemini-api-key', this)"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
-                >
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-              </div>
-              <p class="text-[11px] text-slate-400 mt-1">Ao inserir sua chave, o MRCP carrega automaticamente os modelos disponíveis na sua conta.</p>
-            </div>
-          </div>
-
-          <!-- PANE: OPENAI -->
-          <div id="pane-openai" class="space-y-4 hidden">
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-medium text-slate-200">Chave de API OpenAI (ChatGPT)</label>
-                <a
-                  href="https://platform.openai.com/api-keys"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
-                >
-                  <span>Obter chave na OpenAI Platform</span>
-                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
-                </a>
-              </div>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="openai-api-key"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
-                  placeholder="sk-proj-..."
-                  oninput="handleApiKeyChangeDebounced('openai')"
-                />
-                <button
-                  type="button"
-                  onclick="togglePasswordVisibility('openai-api-key', this)"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
-                >
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-              </div>
-              <p class="text-[11px] text-slate-400 mt-1">O app consulta a API da OpenAI para listar os modelos ativos de chat (gpt-4o, o3-mini, etc.).</p>
-            </div>
-          </div>
-
-          <!-- PANE: CLAUDE -->
-          <div id="pane-claude" class="space-y-4 hidden">
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-medium text-slate-200">Chave de API Anthropic (Claude)</label>
-                <a
-                  href="https://console.anthropic.com/settings/keys"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
-                >
-                  <span>Console Anthropic</span>
-                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
-                </a>
-              </div>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="claude-api-key"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
-                  placeholder="sk-ant-api03-..."
-                  oninput="handleApiKeyChangeDebounced('claude')"
-                />
-                <button
-                  type="button"
-                  onclick="togglePasswordVisibility('claude-api-key', this)"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
-                >
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-              </div>
-              <p class="text-[11px] text-slate-400 mt-1">Pré-configurado com Claude 3.7 Sonnet (híbrido) e Claude 3.5 Sonnet.</p>
-            </div>
-          </div>
-
-          <!-- PANE: NVIDIA -->
-          <div id="pane-nvidia" class="space-y-4 hidden">
-            <div>
-              <label class="block text-xs font-medium text-slate-200 mb-1.5">NVIDIA NIM Base URL</label>
+          <!-- Form para Pasta Local (File Picker) -->
+          <div class="input-group hidden" id="local-input-group">
+            <div class="file-upload-wrapper">
+              <label
+                for="folder-input"
+                class="file-upload-label"
+                id="folder-label"
+              >
+                📁 Selecionar pasta do projeto...
+              </label>
               <input
-                type="text"
-                id="nvidia-base-url"
-                class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 mb-3"
-                value="https://integrate.api.nvidia.com/v1"
+                type="file"
+                id="folder-input"
+                webkitdirectory
+                directory
+                multiple
               />
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-medium text-slate-200">Chave de API NVIDIA NIM</label>
-                <a
-                  href="https://build.nvidia.com"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
-                >
-                  <span>NVIDIA Build Console</span>
-                  <span class="material-symbols-outlined text-[12px]">open_in_new</span>
-                </a>
-              </div>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="nvidia-api-key"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
-                  placeholder="nvapi-..."
-                  oninput="handleApiKeyChangeDebounced('nvidia')"
-                />
-                <button
-                  type="button"
-                  onclick="togglePasswordVisibility('nvidia-api-key', this)"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
-                >
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-              </div>
             </div>
-          </div>
-
-          <!-- PANE: CUSTOM -->
-          <div id="pane-custom" class="space-y-4 hidden">
-            <div class="space-y-3">
-              <div>
-                <label class="block text-xs font-medium text-slate-200 mb-1.5">Nome do Provedor Customizado</label>
-                <input
-                  type="text"
-                  id="custom-provider-name"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500"
-                  placeholder="Ex: Ollama Local, OpenRouter, Groq Cloud, vLLM, LM Studio"
-                />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-200 mb-1.5">Base URL (Compatível com especificação OpenAI)</label>
-                <input
-                  type="text"
-                  id="custom-base-url"
-                  class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs font-mono text-white placeholder:text-slate-500"
-                  placeholder="http://localhost:11434/v1 ou https://openrouter.ai/api/v1"
-                  oninput="handleApiKeyChangeDebounced('custom')"
-                />
-                <p class="text-[10px] text-slate-400 mt-1">Ao preencher a URL, o app consulta automaticamente <code class="text-[#4edea3]">/models</code> para carregar todos os modelos da sua conta/servidor.</p>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-200 mb-1.5">Chave de API (opcional se for servidor local)</label>
-                <div class="relative">
-                  <input
-                    type="password"
-                    id="custom-api-key"
-                    class="w-full bg-[#0a1828] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3.5 py-2 text-xs font-mono text-white placeholder:text-slate-500 pr-10"
-                    placeholder="Chave de API (Bearer Token)"
-                    oninput="handleApiKeyChangeDebounced('custom')"
-                  />
-                  <button
-                    type="button"
-                    onclick="togglePasswordVisibility('custom-api-key', this)"
-                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
-                  >
-                    <span class="material-symbols-outlined text-[18px]">visibility</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SEÇÃO COMPARTILHADA: MODELOS ATUAIS DA CONTA -->
-          <div class="p-4 rounded-xl bg-[#0a1828] border border-[#1d2f44] space-y-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="block text-xs font-semibold text-white">Modelo Ativo para Auditorias &amp; Chat</label>
-                <span id="models-status-badge" class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span>
-                  <span>Modelos atuais disponíveis</span>
-                </span>
-              </div>
-              <button
-                type="button"
-                id="btn-refresh-models"
-                onclick="loadModelsForCurrentProvider(true)"
-                class="px-2.5 py-1 rounded-lg bg-[#0f233a] hover:bg-[#163354] border border-[#1d2f44] text-[11px] font-medium text-slate-200 hover:text-white flex items-center gap-1 transition-colors"
-                title="Buscar modelos atualizados na conta"
-              >
-                <span class="material-symbols-outlined text-[14px]" id="refresh-models-icon">refresh</span>
-                <span>Buscar Modelos</span>
-              </button>
-            </div>
-
-            <div class="relative">
-              <select
-                id="ai-model-select"
-                class="w-full bg-[#06121f] border border-[#1d2f44] focus:border-[#4edea3] focus:ring-1 focus:ring-[#4edea3] rounded-xl px-3 py-2.5 text-xs font-mono text-white appearance-none cursor-pointer"
-              >
-                <option value="gemini-2.5-flash">gemini-2.5-flash (Recomendado · Ultra rápido &amp; econômico)</option>
-                <option value="gemini-2.5-pro">gemini-2.5-pro (Auditoria profunda de arquitetura)</option>
-                <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Nova geração avançada)</option>
-                <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Máxima velocidade)</option>
-                <option value="gemini-flash-latest">gemini-flash-latest (Alias estável)</option>
-              </select>
-              <span class="material-symbols-outlined text-[16px] text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">unfold_more</span>
-            </div>
-
-            <div id="model-description-box" class="text-[11px] text-slate-400 bg-[#06121f]/60 p-2.5 rounded-lg border border-[#1d2f44]/60 font-sans">
-              Recomendado · Equilíbrio ideal entre tempo de resposta determinístico, análise de código e custo de tokens.
-            </div>
+            <button class="action-btn" id="analyze-local-btn" disabled>
+              Analisar Pasta
+            </button>
           </div>
         </div>
 
-        <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-[#17283c] bg-[#040e1a]/90 flex items-center justify-between">
-          <button
-            type="button"
-            onclick="closeAiSettingsModal()"
-            class="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-[#122235] transition-colors"
-          >
-            Cancelar
-          </button>
-          <div class="flex items-center space-x-2">
-            <button
-              type="button"
-              onclick="testProviderConnection()"
-              id="btn-test-connection"
-              class="px-3.5 py-2 rounded-xl bg-[#0c1f33] hover:bg-[#142d4a] border border-[#1d2f44] text-xs font-medium text-slate-200 transition-colors flex items-center gap-1.5"
-            >
-              <span>Testar Conexão</span>
-            </button>
-            <button
-              type="button"
-              onclick="saveAiSettings()"
-              class="px-5 py-2 rounded-xl bg-[#10b981] hover:bg-[#4edea3] text-[#010f1f] font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-[#10b981]/20 transition-all active:scale-95"
-            >
-              <span class="material-symbols-outlined text-[16px]">check</span>
-              <span>Salvar &amp; Ativar</span>
-            </button>
-          </div>
+        <div class="card hidden" id="result-card">
+          <h3 class="result-title">
+            Editor JSON <span class="badge" id="source-badge"></span>
+          </h3>
+          <pre><code id="json-output"></code></pre>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- ========================================================= -->
-    <!-- 5. MOTOR JAVASCRIPT & INTEGRAÇÃO COM GEMINI E AST -->
-    <!-- ========================================================= -->
+    <footer id="fixed-footer">
+      <div class="footer-content">
+        <div class="footer-title">Extração de Resultados</div>
+        <div class="export-actions">
+          <button class="export-btn" id="copy-btn">📋 Copiar JSON</button>
+          <button class="export-btn" id="download-txt-btn">
+            📄 Baixar .txt
+          </button>
+          <button class="export-btn" id="download-md-btn">📝 Baixar .md</button>
+          <button class="export-btn" id="download-json-btn">
+            ⚙️ Baixar .json
+          </button>
+          <button class="export-btn graph-btn" id="download-graph-btn">
+            🌐 Baixar Relatório HTML (Grafo)
+          </button>
+        </div>
+      </div>
+    </footer>
+
     <script>
-      // =========================================================
-      // MODELOS PADRÃO POR PROVEDOR (FALLBACK CANÔNICO & ATUAL)
-      // =========================================================
-      const DEFAULT_MODELS_BY_PROVIDER = {
-        gemini: [
-          { id: "gemini-2.5-flash", name: "gemini-2.5-flash (Recomendado · Ultra rápido & econômico)" },
-          { id: "gemini-2.5-pro", name: "gemini-2.5-pro (Auditoria profunda de arquitetura)" },
-          { id: "gemini-3.1-pro-preview", name: "gemini-3.1-pro-preview (Nova geração avançada)" },
-          { id: "gemini-3.1-flash-lite", name: "gemini-3.1-flash-lite (Máxima velocidade)" },
-          { id: "gemini-flash-latest", name: "gemini-flash-latest (Alias estável)" }
-        ],
-        openai: [
-          { id: "gpt-4o", name: "gpt-4o (Recomendado · Multimodal & Raciocínio ágil)" },
-          { id: "gpt-4o-mini", name: "gpt-4o-mini (Econômico e veloz)" },
-          { id: "o3-mini", name: "o3-mini (Raciocínio avançado para código)" },
-          { id: "o1", name: "o1 (Raciocínio deliberativo profundo)" },
-          { id: "gpt-4-turbo", name: "gpt-4-turbo (Contexto longo 128k)" }
-        ],
-        claude: [
-          { id: "claude-3-7-sonnet-20250219", name: "claude-3.7-sonnet (Híbrido com raciocínio adaptativo)" },
-          { id: "claude-3-5-sonnet-20241022", name: "claude-3.5-sonnet (Padrão ouro de engenharia de software)" },
-          { id: "claude-3-5-haiku-20241022", name: "claude-3.5-haiku (Ultra veloz para triage)" }
-        ],
-        nvidia: [
-          { id: "meta/llama-3.3-70b-instruct", name: "meta/llama-3.3-70b-instruct (Excelente para análise de código e AST)" },
-          { id: "deepseek-ai/deepseek-r1", name: "deepseek-ai/deepseek-r1 (Raciocínio deliberativo de código)" },
-          { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "nvidia/llama-3.1-nemotron-70b-instruct (Otimizado pela NVIDIA)" }
-        ],
-        custom: [
-          { id: "default", name: "Insira a Base URL para carregar os modelos disponíveis" }
-        ]
-      };
+      let currentMode = "github";
+      let selectedFiles = [];
+      let lastJsonResult = null;
 
-      const appState = {
-        sidebarOpen: true,
-        selectedModel: "gemini-2.5-flash",
-        latencyFactor: 0.45,
-        currentRepo: "https://github.com/faelscarpato/mrcp-engine",
-        conversationHistory: [],
-        currentBenchmark: null,
-        isProcessing: false,
-        aiConfig: {
-          activeProvider: "gemini",
-          geminiKey: "",
-          openaiKey: "",
-          claudeKey: "",
-          nvidiaKey: "",
-          nvidiaBaseUrl: "https://integrate.api.nvidia.com/v1",
-          customName: "",
-          customKey: "",
-          customBaseUrl: "",
-          selectedModel: "gemini-2.5-flash",
-          availableModels: []
+      // UI Elements
+      const tabs = document.querySelectorAll(".tab");
+      const urlGroup = document.getElementById("url-input-group");
+      const localGroup = document.getElementById("local-input-group");
+      const urlInput = document.getElementById("url-input");
+      const analyzeUrlBtn = document.getElementById("analyze-url-btn");
+      const analyzeLocalBtn = document.getElementById("analyze-local-btn");
+      const folderInput = document.getElementById("folder-input");
+      const folderLabel = document.getElementById("folder-label");
+      const resultCard = document.getElementById("result-card");
+      const jsonOutput = document.getElementById("json-output");
+      const sourceBadge = document.getElementById("source-badge");
+      const fixedFooter = document.getElementById("fixed-footer");
+
+      // Carregar do Storage (IndexDB / LocalStorage)
+      window.addEventListener("DOMContentLoaded", () => {
+        const cached = localStorage.getItem("mrcp_last_analysis");
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            showResult(data, "cache");
+          } catch (e) {}
         }
-      };
+      });
 
-      let debounceTimer = null;
-      let tempActiveTab = "gemini";
+      // Tab Switching
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          currentMode = tab.dataset.mode;
 
-      function getActiveApiKey() {
-        const p = appState.aiConfig.activeProvider;
-        if (p === "gemini") return appState.aiConfig.geminiKey || "";
-        if (p === "openai") return appState.aiConfig.openaiKey || "";
-        if (p === "claude") return appState.aiConfig.claudeKey || "";
-        if (p === "nvidia") return appState.aiConfig.nvidiaKey || "";
-        if (p === "custom") return appState.aiConfig.customKey || "";
-        return "";
-      }
-
-      function getActiveBaseUrl() {
-        const p = appState.aiConfig.activeProvider;
-        if (p === "nvidia") return appState.aiConfig.nvidiaBaseUrl || "https://integrate.api.nvidia.com/v1";
-        if (p === "custom") return appState.aiConfig.customBaseUrl || "";
-        return "";
-      }
-
-      // =========================================================
-      // GERENCIAMENTO DE MODAIS (ONBOARDING & CONFIGURAÇÃO DE IA)
-      // =========================================================
-      function openOnboardingModal() {
-        const modal = document.getElementById("onboarding-modal");
-        if (modal) modal.classList.remove("hidden");
-      }
-
-      function closeOnboardingModal() {
-        const modal = document.getElementById("onboarding-modal");
-        if (modal) modal.classList.add("hidden");
-      }
-
-      function skipOnboardingAndExplore() {
-        localStorage.setItem("mrcp_onboarding_dismissed", "true");
-        closeOnboardingModal();
-      }
-
-      function openAiSettingsFromOnboarding() {
-        localStorage.setItem("mrcp_onboarding_dismissed", "true");
-        closeOnboardingModal();
-        openAiSettingsModal();
-      }
-
-      function openAiSettingsModal() {
-        const modal = document.getElementById("ai-settings-modal");
-        if (!modal) return;
-        modal.classList.remove("hidden");
-
-        // Sincroniza campos do formulário com appState.aiConfig
-        document.getElementById("gemini-api-key").value = appState.aiConfig.geminiKey || "";
-        document.getElementById("openai-api-key").value = appState.aiConfig.openaiKey || "";
-        document.getElementById("claude-api-key").value = appState.aiConfig.claudeKey || "";
-        document.getElementById("nvidia-api-key").value = appState.aiConfig.nvidiaKey || "";
-        document.getElementById("nvidia-base-url").value = appState.aiConfig.nvidiaBaseUrl || "https://integrate.api.nvidia.com/v1";
-        document.getElementById("custom-provider-name").value = appState.aiConfig.customName || "";
-        document.getElementById("custom-base-url").value = appState.aiConfig.customBaseUrl || "";
-        document.getElementById("custom-api-key").value = appState.aiConfig.customKey || "";
-
-        // Abre na aba do provedor ativo atualmente
-        switchProviderTab(appState.aiConfig.activeProvider || "gemini");
-      }
-
-      function closeAiSettingsModal() {
-        const modal = document.getElementById("ai-settings-modal");
-        if (modal) modal.classList.add("hidden");
-      }
-
-      function switchProviderTab(providerId) {
-        tempActiveTab = providerId;
-        const providers = ["gemini", "openai", "claude", "nvidia", "custom"];
-
-        // Atualiza abas visuais
-        providers.forEach((p) => {
-          const tabBtn = document.getElementById(`tab-btn-${p}`);
-          const pane = document.getElementById(`pane-${p}`);
-          if (tabBtn && pane) {
-            if (p === providerId) {
-              tabBtn.className = "px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-[#4edea3] border-[#4edea3] bg-[#0c1e33]";
-              pane.classList.remove("hidden");
-            } else {
-              tabBtn.className = "px-3.5 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-b-2 text-slate-400 border-transparent hover:text-white hover:bg-[#0c1e33]/50";
-              pane.classList.add("hidden");
-            }
+          if (currentMode === "local") {
+            urlGroup.classList.add("hidden");
+            localGroup.classList.remove("hidden");
+          } else {
+            urlGroup.classList.remove("hidden");
+            localGroup.classList.add("hidden");
+            urlInput.placeholder =
+              currentMode === "github"
+                ? "https://github.com/facebook/react"
+                : "https://seusite.com";
           }
         });
-
-        // Carrega os modelos correspondentes ao provedor selecionado
-        loadModelsForCurrentProvider(false);
-      }
-
-      function togglePasswordVisibility(inputId, btn) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        const isPassword = input.type === "password";
-        input.type = isPassword ? "text" : "password";
-        const icon = btn.querySelector(".material-symbols-outlined");
-        if (icon) {
-          icon.textContent = isPassword ? "visibility_off" : "visibility";
-        }
-      }
-
-      function handleApiKeyChangeDebounced(provider) {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          loadModelsForCurrentProvider(false);
-        }, 700);
-      }
-
-      // =========================================================
-      // CARREGAMENTO DINÂMICO DE MODELOS DA CONTA DO USUÁRIO
-      // =========================================================
-      async function loadModelsForCurrentProvider(force = false) {
-        const provider = tempActiveTab;
-        const statusBadge = document.getElementById("models-status-badge");
-        const select = document.getElementById("ai-model-select");
-        const refreshIcon = document.getElementById("refresh-models-icon");
-
-        if (refreshIcon) refreshIcon.classList.add("animate-spin");
-        if (statusBadge) {
-          statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span><span>Consultando modelos na conta (${provider})...</span>`;
-        }
-
-        // Obtém credenciais atuais inseridas nos campos de texto
-        let apiKey = "";
-        let baseUrl = "";
-
-        if (provider === "gemini") apiKey = document.getElementById("gemini-api-key")?.value.trim() || "";
-        else if (provider === "openai") apiKey = document.getElementById("openai-api-key")?.value.trim() || "";
-        else if (provider === "claude") apiKey = document.getElementById("claude-api-key")?.value.trim() || "";
-        else if (provider === "nvidia") {
-          apiKey = document.getElementById("nvidia-api-key")?.value.trim() || "";
-          baseUrl = document.getElementById("nvidia-base-url")?.value.trim() || "";
-        } else if (provider === "custom") {
-          apiKey = document.getElementById("custom-api-key")?.value.trim() || "";
-          baseUrl = document.getElementById("custom-base-url")?.value.trim() || "";
-        }
-
-        let models = [];
-        let fetchedFromAccount = false;
-
-        // Se tiver apiKey ou baseUrl configurada, tenta buscar na API real
-        if (apiKey || (provider === "custom" && baseUrl)) {
-          try {
-            const queryParams = new URLSearchParams({
-              provider,
-              apiKey,
-              baseUrl
-            });
-            const res = await fetch(`/api/ai/models?${queryParams.toString()}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.status === "success" && Array.isArray(data.data?.models) && data.data.models.length > 0) {
-                models = data.data.models;
-                fetchedFromAccount = true;
-              }
-            }
-          } catch (err) {
-            console.warn("Falha ao buscar modelos na conta do usuário, recorrendo aos pré-configurados:", err);
-          }
-        }
-
-        // Fallback para modelos pré-configurados se não tiver chave ou se a chamada falhou
-        if (models.length === 0) {
-          models = DEFAULT_MODELS_BY_PROVIDER[provider] || DEFAULT_MODELS_BY_PROVIDER.gemini;
-        }
-
-        // Preenche o Select
-        if (select) {
-          const currentSelected = select.value || appState.selectedModel;
-          select.innerHTML = "";
-
-          models.forEach((m) => {
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            opt.textContent = m.name || m.id;
-            select.appendChild(opt);
-          });
-
-          // Restaura valor selecionado se existir na lista
-          if (models.some((m) => m.id === currentSelected)) {
-            select.value = currentSelected;
-          } else if (models.length > 0) {
-            select.value = models[0].id;
-          }
-        }
-
-        if (refreshIcon) refreshIcon.classList.remove("animate-spin");
-
-        if (statusBadge) {
-          if (fetchedFromAccount) {
-            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span><span class="text-[#4edea3] font-medium">${models.length} modelos ativos carregados da sua conta!</span>`;
-          } else if (apiKey) {
-            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4edea3]"></span><span>${models.length} modelos disponíveis para ${provider}</span>`;
-          } else {
-            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span><span>Modelos pré-configurados (${provider})</span>`;
-          }
-        }
-
-        // Atualiza a descrição
-        updateModelDescriptionBox(select?.value || "");
-      }
-
-      function updateModelDescriptionBox(modelId) {
-        const box = document.getElementById("model-description-box");
-        if (!box) return;
-
-        if (modelId.includes("flash")) {
-          box.textContent = "Recomendado · Equilíbrio ideal entre ultra-baixa latência (<0.5s), precisão em árvores sintáticas e custo de tokens mínimo.";
-        } else if (modelId.includes("pro") || modelId.includes("o1") || modelId.includes("r1") || modelId.includes("sonnet")) {
-          box.textContent = "Alta Capacidade Raciocínio · Ideal para refatoração de God Modules complexos, análise profunda de acoplamento e auditoria de arquitetura.";
-        } else if (modelId.includes("4o") || modelId.includes("llama")) {
-          box.textContent = "Modelo de Alta Precisão · Ampla janela de contexto e suporte determinístico a ferramentas externas.";
-        } else {
-          box.textContent = `Modelo selecionado: ${modelId}. Otimizado para geração de contexto e métricas de ROI.`;
-        }
-      }
-
-      document.getElementById("ai-model-select")?.addEventListener("change", (e) => {
-        updateModelDescriptionBox(e.target.value);
       });
 
-      // =========================================================
-      // TESTE DE CONEXÃO & SALVAMENTO DE CONFIGURAÇÕES
-      // =========================================================
-      async function testProviderConnection() {
-        const btn = document.getElementById("btn-test-connection");
-        const originalHtml = btn?.innerHTML;
-        if (btn) btn.innerHTML = `<span class="spinner"></span> <span>Testando...</span>`;
+      // Folder Selection
+      folderInput.addEventListener("change", (e) => {
+        selectedFiles = Array.from(e.target.files).filter((f) => {
+          const path = f.webkitRelativePath;
+          if (
+            path.includes("/node_modules/") ||
+            path.includes("/.git/") ||
+            path.includes("/dist/") ||
+            path.includes("/.next/")
+          )
+            return false;
+          const ext = path.split(".").pop().toLowerCase();
+          const invalidExts = [
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "mp4",
+            "pdf",
+            "zip",
+            "exe",
+            "dll",
+          ];
+          if (invalidExts.includes(ext)) return false;
+          return true;
+        });
 
-        try {
-          await loadModelsForCurrentProvider(true);
-          if (btn) {
-            btn.innerHTML = `<span class="material-symbols-outlined text-[15px] text-[#4edea3]">check_circle</span> <span class="text-[#4edea3]">Conectado!</span>`;
-            setTimeout(() => {
-              btn.innerHTML = originalHtml;
-            }, 2500);
-          }
-        } catch (e) {
-          if (btn) {
-            btn.innerHTML = `<span class="material-symbols-outlined text-[15px] text-red-400">error</span> <span class="text-red-400">Falha</span>`;
-            setTimeout(() => {
-              btn.innerHTML = originalHtml;
-            }, 2500);
-          }
-        }
-      }
-
-      function saveAiSettings() {
-        const provider = tempActiveTab;
-        const selectedModel = document.getElementById("ai-model-select")?.value || "gemini-2.5-flash";
-
-        appState.aiConfig.activeProvider = provider;
-        appState.aiConfig.selectedModel = selectedModel;
-        appState.selectedModel = selectedModel;
-
-        appState.aiConfig.geminiKey = document.getElementById("gemini-api-key")?.value.trim() || "";
-        appState.aiConfig.openaiKey = document.getElementById("openai-api-key")?.value.trim() || "";
-        appState.aiConfig.claudeKey = document.getElementById("claude-api-key")?.value.trim() || "";
-        appState.aiConfig.nvidiaKey = document.getElementById("nvidia-api-key")?.value.trim() || "";
-        appState.aiConfig.nvidiaBaseUrl = document.getElementById("nvidia-base-url")?.value.trim() || "https://integrate.api.nvidia.com/v1";
-        appState.aiConfig.customName = document.getElementById("custom-provider-name")?.value.trim() || "";
-        appState.aiConfig.customBaseUrl = document.getElementById("custom-base-url")?.value.trim() || "";
-        appState.aiConfig.customKey = document.getElementById("custom-api-key")?.value.trim() || "";
-
-        // Salva com segurança no localStorage
-        localStorage.setItem("mrcp_ai_config", JSON.stringify(appState.aiConfig));
-        localStorage.setItem("mrcp_onboarding_dismissed", "true");
-
-        // Atualiza a UI no cabeçalho e nas sidebars
-        updateAiUIIndicators();
-
-        closeAiSettingsModal();
-      }
-
-      function updateAiUIIndicators() {
-        const provider = appState.aiConfig.activeProvider || "gemini";
-        const model = appState.aiConfig.selectedModel || "gemini-2.5-flash";
-
-        let providerLabel = "Gemini";
-        if (provider === "openai") providerLabel = "ChatGPT";
-        else if (provider === "claude") providerLabel = "Claude";
-        else if (provider === "nvidia") providerLabel = "NVIDIA";
-        else if (provider === "custom") providerLabel = appState.aiConfig.customName || "Custom";
-
-        // Label no cabeçalho
-        const headerLabel = document.getElementById("current-model-label");
-        if (headerLabel) {
-          headerLabel.textContent = `${providerLabel} · ${model}`;
-        }
-
-        // Tags nas sidebars
-        const desktopTag = document.getElementById("desktop-sidebar-provider-tag");
-        if (desktopTag) desktopTag.textContent = providerLabel;
-
-        const mobileTag = document.getElementById("mobile-sidebar-provider-tag");
-        if (mobileTag) mobileTag.textContent = providerLabel;
-      }
-
-      function initAiConfiguration() {
-        try {
-          const saved = localStorage.getItem("mrcp_ai_config");
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            appState.aiConfig = Object.assign({}, appState.aiConfig, parsed);
-            if (appState.aiConfig.selectedModel) {
-              appState.selectedModel = appState.aiConfig.selectedModel;
-            }
-            updateAiUIIndicators();
-          } else {
-            // Se não tem configuração prévia e não dispensou, abre o Onboarding após um breve instante
-            const dismissed = localStorage.getItem("mrcp_onboarding_dismissed");
-            if (!dismissed) {
-              setTimeout(() => {
-                openOnboardingModal();
-              }, 400);
-            }
-          }
-        } catch (e) {
-          console.warn("Falha ao inicializar configurações de IA:", e);
-        }
-      }
-
-      // Drawer em Mobile
-      function openDrawer() {
-        const drawer = document.getElementById("sidebar-drawer");
-        const backdrop = document.getElementById("drawer-backdrop");
-        const panel = document.getElementById("drawer-panel");
-        drawer.classList.remove("pointer-events-none");
-        drawer.classList.add("pointer-events-auto", "opacity-100");
-        backdrop.classList.add("opacity-100");
-        panel.classList.remove("-translate-x-full");
-        panel.classList.add("translate-x-0");
-      }
-
-      function closeDrawer() {
-        const drawer = document.getElementById("sidebar-drawer");
-        const backdrop = document.getElementById("drawer-backdrop");
-        const panel = document.getElementById("drawer-panel");
-        panel.classList.remove("translate-x-0");
-        panel.classList.add("-translate-x-full");
-        backdrop.classList.remove("opacity-100");
-        drawer.classList.remove("opacity-100");
-        drawer.classList.add("pointer-events-none");
-      }
-
-      document.getElementById("close-drawer-btn")?.addEventListener("click", closeDrawer);
-      document.getElementById("drawer-backdrop")?.addEventListener("click", closeDrawer);
-
-      function handleHeaderMenuClick() {
-        if (window.innerWidth < 768) {
-          openDrawer();
+        if (selectedFiles.length > 0) {
+          folderLabel.textContent = `📁 ${selectedFiles.length} arquivos selecionados`;
+          analyzeLocalBtn.disabled = false;
         } else {
-          toggleSidebar();
-        }
-      }
-
-      // Sidebar Desktop Toggle
-      function toggleSidebar() {
-        const sidebar = document.getElementById("sidebar");
-        appState.sidebarOpen = !appState.sidebarOpen;
-        if (appState.sidebarOpen) {
-          sidebar.classList.remove("-ml-64");
-        } else {
-          sidebar.classList.add("-ml-64");
-        }
-      }
-
-      // Model Menu
-      function toggleModelMenu() {
-        const menu = document.getElementById("model-menu");
-        menu.classList.toggle("hidden");
-      }
-
-      document.addEventListener("click", function (e) {
-        const container = document.getElementById("model-dropdown-container");
-        const menu = document.getElementById("model-menu");
-        if (container && !container.contains(e.target)) {
-          menu.classList.add("hidden");
+          folderLabel.textContent = "📁 Selecionar pasta do projeto...";
+          analyzeLocalBtn.disabled = true;
         }
       });
 
-      function changeModel(name, latency) {
-        appState.selectedModel = name;
-        appState.latencyFactor = latency;
-        document.getElementById("current-model-label").innerText = name;
-        document.getElementById("model-menu").classList.add("hidden");
-      }
-
-      // =========================================================
-      // GERENCIAMENTO DE REPOSITÓRIOS RECENTES DO USUÁRIO (LOCALSTORAGE)
-      // =========================================================
-      function getRecentRepos() {
+      // API Call (URL)
+      analyzeUrlBtn.addEventListener("click", async () => {
+        const url = urlInput.value.trim();
+        if (!url) return;
+        setLoading(analyzeUrlBtn, true);
         try {
-          const raw = localStorage.getItem("mrcp_user_repos");
-          return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-          return [];
-        }
-      }
-
-      function saveRecentRepo(repoUrl) {
-        if (!repoUrl) return;
-        let clean = repoUrl.replace(/^https?:\/\/github\.com\//i, "").replace(/\/$/, "").trim();
-        clean = clean.replace(/\.git$/, "");
-        if (!clean) return;
-
-        const existing = getRecentRepos().filter((r) => r.toLowerCase() !== clean.toLowerCase());
-        const updated = [clean, ...existing].slice(0, 8);
-        try {
-          localStorage.setItem("mrcp_user_repos", JSON.stringify(updated));
-        } catch (e) {
-          console.warn("Falha ao salvar repositório recente no localStorage:", e);
-        }
-        renderRecentRepos();
-      }
-
-      function removeRecentRepo(repoName, event) {
-        if (event) event.stopPropagation();
-        const existing = getRecentRepos().filter((r) => r.toLowerCase() !== repoName.toLowerCase());
-        try {
-          localStorage.setItem("mrcp_user_repos", JSON.stringify(existing));
-        } catch (e) {}
-        renderRecentRepos();
-      }
-
-      function clearRecentRepos() {
-        try {
-          localStorage.removeItem("mrcp_user_repos");
-        } catch (e) {}
-        renderRecentRepos();
-      }
-
-      function renderRecentRepos() {
-        const repos = getRecentRepos();
-        const desktopContainer = document.getElementById("desktop-recent-repos");
-        const mobileContainer = document.getElementById("mobile-recent-repos");
-        const desktopClearBtn = document.getElementById("desktop-clear-recent-btn");
-        const mobileClearBtn = document.getElementById("mobile-clear-recent-btn");
-
-        if (desktopClearBtn) {
-          if (repos.length > 0) desktopClearBtn.classList.remove("hidden");
-          else desktopClearBtn.classList.add("hidden");
-        }
-        if (mobileClearBtn) {
-          if (repos.length > 0) mobileClearBtn.classList.remove("hidden");
-          else mobileClearBtn.classList.add("hidden");
-        }
-
-        const renderHtml = (isMobile) => {
-          if (repos.length === 0) {
-            return `
-              <div class="px-2.5 py-3 text-center border border-dashed border-[#1a334d] rounded-xl bg-[#071626]/40">
-                <span class="material-symbols-outlined text-[16px] text-slate-500 block mb-0.5">history</span>
-                <p class="text-[11px] text-slate-400 font-medium">Nenhum repositório recente</p>
-                <p class="text-[10px] text-slate-500 mt-0.5">Audite um repositório para salvá-lo aqui</p>
-              </div>
-            `;
-          }
-
-          return repos
-            .map((repo) => {
-              const escapedRepo = repo.replace(/'/g, "\\'");
-              return `
-              <div class="group flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-300 hover:text-white hover:bg-[#122131] border border-transparent hover:border-[#1c2b3c] transition-all cursor-pointer">
-                <button
-                  type="button"
-                  onclick="quickAuditPreset('${escapedRepo}'); ${isMobile ? 'closeDrawer();' : ''}"
-                  class="flex items-center gap-2 min-w-0 flex-1 text-left truncate"
-                  title="${repo}"
-                >
-                  <svg class="w-3.5 h-3.5 shrink-0 text-[#4edea3]" viewBox="0 0 16 16" fill="currentColor">
-                    <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25a.75.75 0 100 1.5.75.75 0 000-1.5z"></path>
-                  </svg>
-                  <span class="truncate">${repo}</span>
-                </button>
-                <button
-                  type="button"
-                  onclick="removeRecentRepo('${escapedRepo}', event)"
-                  class="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 p-0.5 rounded transition-all shrink-0"
-                  title="Remover"
-                >
-                  <span class="material-symbols-outlined text-[13px]">close</span>
-                </button>
-              </div>
-            `;
-            })
-            .join("");
-        };
-
-        if (desktopContainer) desktopContainer.innerHTML = renderHtml(false);
-        if (mobileContainer) mobileContainer.innerHTML = renderHtml(true);
-      }
-
-      function setHeroPreset(repo) {
-        const fullUrl = repo.startsWith("http") ? repo : `https://github.com/${repo}`;
-        document.getElementById("hero-input").value = fullUrl;
-      }
-
-      function quickAuditPreset(repo) {
-        const fullUrl = repo.startsWith("http") ? repo : `https://github.com/${repo}`;
-        document.getElementById("hero-input").value = fullUrl;
-        triggerAnalysisFlow(fullUrl);
-      }
-
-      function startNewAnalysis() {
-        appState.conversationHistory = [];
-        appState.currentBenchmark = null;
-        document.getElementById("welcome-view").classList.remove("hidden");
-        document.getElementById("thread-container").classList.add("hidden");
-        document.getElementById("bottom-composer-wrapper").classList.add("hidden");
-        document.getElementById("thread-container").innerHTML = "";
-        const input = document.getElementById("hero-input");
-        input.value = "https://github.com/faelscarpato/mrcp-engine";
-        input.focus();
-      }
-
-      function handleHeroSubmit(e) {
-        e.preventDefault();
-        const input = document.getElementById("hero-input");
-        const val = input.value.trim() || "https://github.com/faelscarpato/mrcp-engine";
-        triggerAnalysisFlow(val);
-      }
-
-      function handleBottomSubmit(e) {
-        e.preventDefault();
-        const input = document.getElementById("bottom-input");
-        const text = input.value.trim();
-        if (!text || appState.isProcessing) return;
-
-        appendUserBubble(text);
-        input.value = "";
-        requestGeminiReply(text);
-      }
-
-      // Dispara a Análise AST Real + Relatório de ROI da IA + Medição Precisa de Tempo
-      async function triggerAnalysisFlow(repoUrl) {
-        if (appState.isProcessing) return;
-        appState.isProcessing = true;
-        appState.currentRepo = repoUrl;
-        saveRecentRepo(repoUrl);
-
-        const startTime = performance.now();
-        let timerInterval = null;
-
-        // Feedback visual no botão hero
-        const heroSubmitIcon = document.getElementById("hero-submit-icon");
-        if (heroSubmitIcon) {
-          heroSubmitIcon.innerHTML = '<span class="spinner"></span>';
-        }
-
-        // Alterna visualização para a thread de chat
-        document.getElementById("welcome-view").classList.add("hidden");
-        const thread = document.getElementById("thread-container");
-        thread.classList.remove("hidden");
-        document.getElementById("bottom-composer-wrapper").classList.remove("hidden");
-
-        appendUserBubble(`Auditar repositório e calcular ROI com MRCP: ${repoUrl}`);
-
-        // Card de progresso dinâmico com cronômetro em tempo real
-        const progressId = `progress-${Date.now()}`;
-        const progressDiv = document.createElement("div");
-        progressDiv.id = progressId;
-        progressDiv.className = "flex items-start space-x-3 w-full animate-fadeIn";
-        progressDiv.innerHTML = `
-          <div class="w-8 h-8 rounded-xl bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3] flex-shrink-0 mt-0.5">
-            <span class="material-symbols-outlined text-[17px]">sync</span>
-          </div>
-          <div class="flex-1 space-y-2 text-xs sm:text-sm text-[#bec6e0] bg-[#0d1c2d] border border-[#1c2b3c] rounded-2xl p-4 shadow-lg max-w-2xl">
-            <div class="flex items-center justify-between">
-              <span class="font-semibold text-white flex items-center gap-2">
-                <span class="spinner"></span>
-                <span id="${progressId}-status">Executando análise rápida de saúde de código (curl code-health)...</span>
-              </span>
-              <span id="${progressId}-timer" class="font-mono text-[#4edea3] bg-[#010f1f] px-2.5 py-0.5 rounded-full border border-[#1c2b3c] text-xs font-semibold">
-                ⏱️ 0.0s
-              </span>
-            </div>
-            <p id="${progressId}-desc" class="text-[11px] text-[#bec6e0]/70 font-mono">
-              curl "https://mrcp-engine.vercel.app/api/code-health?repo=${repoUrl}"
-            </p>
-          </div>
-        `;
-        thread.appendChild(progressDiv);
-        scrollToBottom();
-
-        // Atualiza o cronômetro visual em tempo real (a cada 100ms)
-        timerInterval = setInterval(() => {
-          const currentElapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-          const timerElem = document.getElementById(`${progressId}-timer`);
-          if (timerElem) {
-            timerElem.textContent = `⏱️ ${currentElapsed}s`;
-          }
-        }, 100);
-
-        try {
-          // 1. Executa a requisição real de code-health (mais rápida e precisa)
-          let codeHealth = null;
-          try {
-            const res = await fetch(`/api/code-health?repo=${encodeURIComponent(repoUrl)}`);
-            if (res.ok) {
-              const json = await res.json();
-              codeHealth = json.code_health || json.data || json;
-            }
-          } catch (fetchErr) {
-            console.warn("Falha no fetch de code-health, usando fallback analítico:", fetchErr);
-          }
-
-          if (!codeHealth || !codeHealth.summary) {
-            codeHealth = {
-              repoUrl: repoUrl,
-              maintainabilityIndex: 80,
-              maintainabilityRating: "EXCELLENT",
-              technicalDebtScore: 40,
-              letterGrade: "A",
-              summary: {
-                totalFiles: 164,
-                totalLinesOfCode: 27909,
-                totalFunctions: 883,
-                averageComplexityPerFile: 28.4,
-                testToCodeRatio: 0.09,
-                godModulesCount: 4
-              },
-              cognitiveLoadDistribution: {
-                low: 36,
-                moderate: 20,
-                high: 23,
-                extreme: 21
-              },
-              topRefactoringPriorities: [
-                {
-                  file: "packages/core/lib/web/page-cloner.ts",
-                  cyclomaticComplexity: 212,
-                  linesOfCode: 1017,
-                  cognitiveLoad: "EXTREME",
-                  estimatedEffortHours: 36.9,
-                  primaryIssue: "Arquivo monolítico com excesso de responsabilidades",
-                  recommendedAction: "Dividir em sub-módulos coesos seguindo o Princípio da Responsabilidade Única (SRP)"
-                },
-                {
-                  file: "api/mcp-executor.ts",
-                  cyclomaticComplexity: 120,
-                  linesOfCode: 735,
-                  cognitiveLoad: "EXTREME",
-                  estimatedEffortHours: 21.7,
-                  primaryIssue: "Arquivo monolítico com acoplamento de execução",
-                  recommendedAction: "Modularizar manipuladores MCP em arquivos isolados"
-                }
-              ]
-            };
-          }
-
-          // Atualiza status do card de progresso
-          const statusElem = document.getElementById(`${progressId}-status`);
-          if (statusElem) statusElem.textContent = "Saúde do código compilada! O Curador de Custos Gemini está gerando o relatório e ROI...";
-          const descElem = document.getElementById(`${progressId}-desc`);
-          if (descElem) descElem.textContent = "Calculando economia de tokens, latência, 21 ferramentas MCP e 13 análises do VS Code...";
-
-          // 2. Chama a IA para ler o JSON real e sintetizar o relatório
-          const chatPrompt = `Analise a saúde do código do repositório ${repoUrl}, compare o ROI (Sem MRCP vs Com MRCP) e destaque os problemas identificados no código.`;
-          appState.conversationHistory.push({ role: "user", content: chatPrompt });
-
-          const chatRes = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              messages: [{ role: "user", content: chatPrompt }],
-              model: appState.selectedModel,
-              provider: appState.aiConfig.activeProvider || "gemini",
-              apiKey: getActiveApiKey(),
-              baseUrl: getActiveBaseUrl(),
-              codeHealth: codeHealth,
-              startTimeMs: startTime
-            })
-          });
-
-          const chatData = await chatRes.json();
-          clearInterval(timerInterval);
-          const totalDurationSeconds = ((performance.now() - startTime) / 1000).toFixed(2);
-
-          // Remove o placeholder de progresso
-          document.getElementById(progressId)?.remove();
-
-          if (chatData.status === "success" && chatData.data) {
-            const reply = chatData.data.reply;
-            appState.conversationHistory.push({ role: "model", content: reply });
-            appState.lastGeneratedReport = reply;
-
-            // Renderiza o relatório completo da IA com tempo total e os 2 botões solicitados
-            appendAssistantFinalReportBubble({
-              repoUrl,
-              markdownText: reply,
-              totalTimeSeconds: totalDurationSeconds,
-              tokenUsage: chatData.data.tokenUsage,
-              modelUsed: chatData.data.model || appState.selectedModel
-            });
-          } else {
-            appendAssistantTextBubble("Não foi possível gerar a análise no momento. Por favor tente novamente.");
-          }
-        } catch (err) {
-          if (timerInterval) clearInterval(timerInterval);
-          document.getElementById(progressId)?.remove();
-          console.error("Erro no processamento da análise:", err);
-          appendAssistantTextBubble(`Erro ao processar análise do repositório: ${err.message}`);
-        } finally {
-          if (timerInterval) clearInterval(timerInterval);
-          appState.isProcessing = false;
-          if (heroSubmitIcon) {
-            heroSubmitIcon.innerHTML = '<span class="material-symbols-outlined text-[20px] font-bold">arrow_upward</span>';
-          }
-        }
-      }
-
-      function appendUserBubble(text) {
-        const thread = document.getElementById("thread-container");
-        const msg = document.createElement("div");
-        msg.className = "flex justify-end w-full animate-fadeIn";
-        msg.innerHTML = `
-          <div class="max-w-xl bg-[#122131] border border-[#1c2b3c] rounded-2xl rounded-tr-sm px-4 py-2.5 text-white text-xs sm:text-sm leading-relaxed">
-            ${text}
-          </div>
-        `;
-        thread.appendChild(msg);
-        scrollToBottom();
-      }
-
-      // Renderiza a resposta da IA com badge de tempo total e os 2 botões de ação abaixo
-      function appendAssistantFinalReportBubble({ repoUrl, markdownText, totalTimeSeconds, tokenUsage, modelUsed }) {
-        const thread = document.getElementById("thread-container");
-        const msg = document.createElement("div");
-        msg.className = "flex items-start space-x-3 w-full animate-fadeIn";
-
-        const repoClean = repoUrl.replace(/^https?:\/\/github\.com\//i, "");
-        const formattedHtml = formatMarkdownWithMarked(markdownText);
-
-        msg.innerHTML = `
-          <div class="w-8 h-8 rounded-xl bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3] flex-shrink-0 mt-0.5">
-            <span class="material-symbols-outlined text-[17px]">smart_toy</span>
-          </div>
-          <div class="flex-1 space-y-3 max-w-3xl text-xs sm:text-sm text-[#bec6e0] leading-relaxed">
-            <!-- Header do Assistente com Badge de Tempo Total Real -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#1c2b3c]">
-              <div class="flex items-center space-x-2">
-                <span class="font-semibold text-white">Curador de Custos &amp; Arquiteto MRCP</span>
-                <span class="text-[#bec6e0]/60">•</span>
-                <span class="font-mono text-[#bec6e0] text-[11px]">${modelUsed}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="inline-flex items-center gap-1 font-mono text-[11px] px-2.5 py-0.5 rounded-full bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/30 font-semibold shadow-sm">
-                  <span class="material-symbols-outlined text-[14px]">timer</span> Tempo Total: ${totalTimeSeconds}s
-                </span>
-                ${
-                  tokenUsage
-                    ? `<span class="inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded bg-[#122131] text-slate-300 border border-[#1c2b3c]">
-                         ⚡ ${tokenUsage.totalTokens} tokens
-                       </span>`
-                    : ""
-                }
-              </div>
-            </div>
-
-            <!-- Conteúdo do Relatório da IA em Markdown Formatado -->
-            <div class="prose-mrcp text-[#d4e4fa] space-y-2 font-sans">
-              ${formattedHtml}
-            </div>
-
-            <!-- OS 2 BOTÕES SOLICITADOS ABAIXO DA RESPOSTA DA IA -->
-            <div class="pt-3 border-t border-[#1c2b3c] flex flex-wrap items-center gap-3">
-              <!-- Botão 1: Download do Relatório (.md) -->
-              <button
-                onclick="downloadReportMarkdown('${repoClean}', '${totalTimeSeconds}')"
-                class="px-4 py-2 rounded-xl bg-[#122131] hover:bg-[#1a334d] border border-[#1c2b3c] hover:border-[#4edea3]/40 text-xs font-semibold text-white flex items-center gap-2 transition-all shadow-sm active:scale-95 group cursor-pointer"
-              >
-                <span class="material-symbols-outlined text-[17px] text-[#4edea3] group-hover:-translate-y-0.5 transition-transform">download</span>
-                <span>Download do Relatório (.md)</span>
-              </button>
-
-              <!-- Botão 2: Download da Extensão do VS Code -->
-              <a
-                href="https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode"
-                target="_blank"
-                rel="noopener"
-                class="px-4 py-2 rounded-xl bg-[#003824] hover:bg-[#004e33] border border-[#4edea3]/40 text-xs font-semibold text-[#4edea3] flex items-center gap-2 transition-all shadow-sm active:scale-95 group"
-              >
-                <span class="material-symbols-outlined text-[17px]">extension</span>
-                <span>Download da Extensão VS Code</span>
-                <span class="material-symbols-outlined text-[14px] opacity-70 group-hover:translate-x-0.5 transition-transform">open_in_new</span>
-              </a>
-            </div>
-          </div>
-        `;
-
-        thread.appendChild(msg);
-        scrollToBottom();
-      }
-
-      function downloadReportMarkdown(repoName, totalTimeSeconds) {
-        const markdownText = appState.lastGeneratedReport || "Relatório executivo MRCP Engine.";
-        const header = `# Relatório Executivo MRCP Engine — ROI & Diagnóstico
-- **Repositório:** https://github.com/${repoName}
-- **Data da Análise:** ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}
-- **Tempo Total da Análise:** ${totalTimeSeconds || "N/A"}s
-- **Arquiteto:** MRCP Engine 2.6 & Gemini 2.5 Flash
-
----
-
-`;
-        const blob = new Blob([header + markdownText], { type: "text/markdown;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `MRCP-Relatorio-${repoName.replace(/[\/\\]/g, "_")}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
-      function formatMarkdownWithMarked(text) {
-        if (!text) return "";
-        try {
-          if (typeof marked !== "undefined" && marked.parse) {
-            return marked.parse(text);
-          }
-        } catch (e) {
-          console.warn("marked.js parse error, fallback to regex:", e);
-        }
-        return formatMarkdown(text);
-      }
-
-      async function requestGeminiReply(promptText, isInitial = false) {
-        const thread = document.getElementById("thread-container");
-        const bottomSubmitIcon = document.getElementById("bottom-submit-icon");
-        if (bottomSubmitIcon) bottomSubmitIcon.innerHTML = '<span class="spinner"></span>';
-
-        // Placeholder temporário de streaming / thinking
-        const thinkingId = `thinking-${Date.now()}`;
-        const thinkingDiv = document.createElement("div");
-        thinkingDiv.id = thinkingId;
-        thinkingDiv.className = "flex items-start space-x-3 w-full animate-fadeIn";
-        thinkingDiv.innerHTML = `
-          <div class="w-8 h-8 rounded-xl bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3] flex-shrink-0 mt-0.5">
-            <span class="material-symbols-outlined text-[17px]">smart_toy</span>
-          </div>
-          <div class="flex-1 space-y-2 text-xs sm:text-sm text-[#bec6e0]">
-            <span class="inline-flex items-center gap-1.5 font-mono text-xs text-[#4edea3]">
-              <span class="spinner"></span> Curando custos com ${appState.selectedModel}...
-            </span>
-          </div>
-        `;
-        thread.appendChild(thinkingDiv);
-        scrollToBottom();
-
-        try {
-          const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              messages: appState.conversationHistory,
-              model: appState.selectedModel,
-              provider: appState.aiConfig.activeProvider || "gemini",
-              apiKey: getActiveApiKey(),
-              baseUrl: getActiveBaseUrl(),
-              projectContext: {
-                repoName: appState.currentRepo,
-                filesCount: appState.currentBenchmark?.metrics?.filesCount || 45,
-                totalLines: appState.currentBenchmark?.metrics?.totalLines || 6800,
-                functionsCount: appState.currentBenchmark?.metrics?.functionsCount || 160,
-                importsCount: appState.currentBenchmark?.metrics?.importsCount || 95
-              }
-            })
-          });
-
+          const res = await fetch(
+            `/api/analyze?repo=${encodeURIComponent(url)}`,
+            { headers: { Accept: "application/json" } },
+          );
           const data = await res.json();
-          document.getElementById(thinkingId)?.remove();
-
-          if (data.status === "success" && data.data) {
-            const reply = data.data.reply;
-            appState.conversationHistory.push({ role: "model", content: reply });
-            appendAssistantTextBubble(reply, data.data.tokenUsage);
-          } else {
-            appendAssistantTextBubble("Não foi possível obter resposta no momento. Tente novamente.");
-          }
+          showResult(data, currentMode);
         } catch (err) {
-          document.getElementById(thinkingId)?.remove();
-          appendAssistantTextBubble(`Erro ao conectar com o serviço de IA: ${err.message}`);
-        } finally {
-          if (bottomSubmitIcon) {
-            bottomSubmitIcon.innerHTML = '<span class="material-symbols-outlined text-[18px]">arrow_upward</span>';
-          }
+          showResult({ error: err.message }, "error");
         }
+        setLoading(analyzeUrlBtn, false);
+      });
+
+      // API Call (Local Upload)
+      analyzeLocalBtn.addEventListener("click", async () => {
+        if (selectedFiles.length === 0) return;
+        setLoading(analyzeLocalBtn, true);
+        try {
+          const filePayloads = await Promise.all(
+            selectedFiles.map((file) => {
+              return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  resolve({
+                    path: file.webkitRelativePath,
+                    content: e.target.result,
+                    size: file.size,
+                  });
+                };
+                reader.readAsText(file);
+              });
+            }),
+          );
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ files: filePayloads }),
+          });
+          const data = await res.json();
+          showResult(data, "local-upload");
+        } catch (err) {
+          showResult({ error: err.message }, "error");
+        }
+        setLoading(analyzeLocalBtn, false);
+      });
+
+      // Helper: Show Result
+      function showResult(data, source) {
+        lastJsonResult = data;
+        localStorage.setItem("mrcp_last_analysis", JSON.stringify(data));
+
+        resultCard.classList.remove("hidden");
+        fixedFooter.classList.add("visible"); // Mostra o footer fixo!
+        sourceBadge.textContent = source;
+
+        const jsonStr = JSON.stringify(data, null, 2);
+        jsonOutput.innerHTML = syntaxHighlight(jsonStr);
       }
 
-      function appendAssistantTextBubble(rawMarkdown, tokenUsage) {
-        const thread = document.getElementById("thread-container");
-        const msg = document.createElement("div");
-        msg.className = "flex items-start space-x-3 w-full animate-fadeIn";
-
-        const formatted = formatMarkdownWithMarked(rawMarkdown);
-        const tokenBadge = tokenUsage
-          ? `<span class="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/20">
-               ⚡ ${tokenUsage.totalTokens} tokens
-             </span>`
-          : "";
-
-        msg.innerHTML = `
-          <div class="w-8 h-8 rounded-xl bg-[#4edea3]/10 border border-[#4edea3]/30 flex items-center justify-center text-[#4edea3] flex-shrink-0 mt-0.5">
-            <span class="material-symbols-outlined text-[17px]">smart_toy</span>
-          </div>
-          <div class="flex-1 space-y-2 max-w-2xl text-xs sm:text-sm text-[#bec6e0] leading-relaxed">
-            <div class="flex items-center justify-between text-xs pb-1">
-              <div class="flex items-center space-x-2">
-                <span class="font-semibold text-white">Curador de Custos MRCP</span>
-                <span class="text-[#bec6e0]/60">•</span>
-                <span class="font-mono text-[#bec6e0] text-[11px]">${appState.selectedModel}</span>
-              </div>
-              ${tokenBadge}
-            </div>
-            <div class="prose-mrcp text-[#d4e4fa] space-y-2 font-sans">${formatted}</div>
-          </div>
-        `;
-        thread.appendChild(msg);
-        scrollToBottom();
-      }
-
-      function formatMarkdown(text) {
-        if (!text) return "";
-        let html = text
+      // Helper: Syntax Highlight JSON
+      function syntaxHighlight(json) {
+        json = json
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-
-        // Code blocks
-        html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-          return `<pre class="my-2 p-3 bg-[#010f1f] border border-[#1c2b3c] rounded-lg font-mono text-xs text-[#93c5fd] overflow-x-auto"><code>${code}</code></pre>`;
-        });
-
-        // Inline code
-        html = html.replace(/`([^`]+)`/g, '<code class="bg-[#122131] px-1.5 py-0.5 rounded font-mono text-[#4edea3] text-xs">$1</code>');
-
-        // Headers
-        html = html.replace(/^#### (.*$)/gim, '<h5 class="text-xs font-bold text-[#4edea3] mt-2 mb-1">$1</h5>');
-        html = html.replace(/^### (.*$)/gim, '<h4 class="text-sm font-bold text-white mt-3 mb-1.5">$1</h4>');
-        html = html.replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-white mt-3.5 mb-2">$1</h3>');
-
-        // Bold & Italic
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
-        html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-
-        // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-[#4edea3] hover:underline">$1</a>');
-
-        // Lists
-        html = html.replace(/^\s*[-•]\s+(.*$)/gim, '<li class="ml-4 list-disc">$1</li>');
-
-        // Paragraphs
-        const paragraphs = html.split(/\n\n+/).map((p) => {
-          if (p.startsWith("<h") || p.startsWith("<pre") || p.startsWith("<li")) return p;
-          return `<p>${p.replace(/\n/g, "<br/>")}</p>`;
-        });
-
-        return paragraphs.join("");
+        return json.replace(
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+          function (match) {
+            let cls = "number";
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) {
+                cls = "key";
+              } else {
+                cls = "string";
+              }
+            } else if (/true|false/.test(match)) {
+              cls = "boolean";
+            } else if (/null/.test(match)) {
+              cls = "null";
+            }
+            return '<span class="' + cls + '">' + match + "</span>";
+          },
+        );
       }
 
-      function scrollToBottom() {
-        const scrollArea = document.getElementById("chat-scroll-area");
-        if (scrollArea) {
-          scrollArea.scrollTop = scrollArea.scrollHeight;
+      // Helper: Loading State
+      function setLoading(btn, isLoading) {
+        if (isLoading) {
+          btn.dataset.text = btn.textContent;
+          btn.innerHTML = '<span class="loader"></span>';
+          btn.disabled = true;
+          fixedFooter.classList.remove("visible");
+        } else {
+          btn.textContent = btn.dataset.text;
+          btn.disabled = false;
         }
       }
 
-      function copyToClipboard(text, btnElement) {
-        navigator.clipboard.writeText(text).then(() => {
-          if (btnElement) {
-            const original = btnElement.innerHTML;
-            btnElement.innerHTML = `<span class="material-symbols-outlined text-[14px] text-[#4edea3]">check</span> <span class="text-[#4edea3] text-xs">Copiado!</span>`;
-            setTimeout(() => {
-              btnElement.innerHTML = original;
-            }, 1800);
-          }
-        });
-      }
-
-      function downloadReport(repoName) {
-        const bm = appState.currentBenchmark;
-        const reduction = bm?.tokenReductionPercent || 98.6;
-        const rawTokens = bm?.withoutMrcp?.tokensPerTask?.toLocaleString() || "505.264";
-        const mrcpTokens = bm?.withMrcp?.tokensPerTask?.toLocaleString() || "6.975";
-        const costWithout = bm?.withoutMrcp?.costPerTaskUSD || 1.57;
-        const costWith = bm?.withMrcp?.costPerTaskUSD || 0.081;
-        const monthly10 = bm?.savings?.monthlySavingsTeam10USD || 4933;
-
-        const content = `# MRCP 2.6 — Relatório de Benchmark AST & ROI
-Alvo: ${repoName}
-Data: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}
-
-## 1. Comparativo de Consumo por Tarefa (~8 turnos de agente)
-- 🔴 Sem MRCP (Ingestão Bruta): ~${rawTokens} tokens ($${costWithout.toFixed(2)} USD)
-- 🟢 Com MRCP (AST Determinístico): ~${mrcpTokens} tokens ($${costWith.toFixed(3)} USD)
-- ⚡ Redução de Tokens: -${reduction}%
-- ⏱️ Latência de Ingestão: < 0.8s (vs ~15.9s no modelo bruto)
-- 🛡️ Integridade Sintática: 100% Determinístico (0% alucinações)
-
-## 2. Projeção de Economia de Equipe
-- Equipe de 10 Engenheiros: Economia de ~$${Math.round(monthly10).toLocaleString()} USD/mês
-
-## 3. Comandos para Análise Real
-\`\`\`bash
-# Via cURL (Análise rápida de Code Health):
-curl "https://mrcp-engine.vercel.app/api/code-health?repo=https://github.com/${repoName}"
-
-# Via CLI local (MCP Setup com 21 ferramentas):
-npx mrcp-engine setup
-\`\`\`
-
-## 4. Integrações
-- 21 Ferramentas de Análise profunda disponíveis via MCP para Cursor, Claude, Windsurf: \`npx mrcp-engine setup\`
-- 13 Análises em tempo real no VS Code: https://marketplace.visualstudio.com/items?itemName=mrcp-engine.mrcp-vscode
-- MCP Setup: npx mrcp-engine setup
-`;
-        const blob = new Blob([content], { type: "text/markdown;charset=utf-8;" });
+      // Helper: Download File
+      function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `MRCP-Relatorio-${repoName.replace(/\//g, "_")}.md`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       }
 
-      function downloadContextPack(repoName) {
-        const bm = appState.currentBenchmark;
-        const data = {
-          version: "2.6.4",
-          repository: repoName,
-          timestamp: new Date().toISOString(),
-          reduction_percent: bm?.tokenReductionPercent || 98.6,
-          protocol: "Model Context Protocol (MCP)",
-          metrics: bm?.metrics || { functionsCount: 160, importsCount: 95 }
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `MRCP-ContextPack-${repoName.replace(/\//g, "_")}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-
-      // Atalho de teclado Command+K / Ctrl+K
-      window.addEventListener("keydown", (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-          e.preventDefault();
-          startNewAnalysis();
-        }
+      // Actions: Copiar
+      document.getElementById("copy-btn").addEventListener("click", () => {
+        if (!lastJsonResult) return;
+        navigator.clipboard.writeText(JSON.stringify(lastJsonResult, null, 2));
+        const btn = document.getElementById("copy-btn");
+        const original = btn.innerHTML;
+        btn.innerHTML = "✅ Copiado!";
+        setTimeout(() => (btn.innerHTML = original), 2000);
       });
 
-      // Inicialização da Configuração de IA, Onboarding Modal e Repositórios Recentes
-      initAiConfiguration();
-      renderRecentRepos();
+      // Actions: Baixar JSON
+      document
+        .getElementById("download-json-btn")
+        .addEventListener("click", () => {
+          if (!lastJsonResult) return;
+          downloadFile(
+            JSON.stringify(lastJsonResult, null, 2),
+            `mrcp-analysis-${Date.now()}.json`,
+            "application/json",
+          );
+        });
+
+      // Actions: Baixar TXT
+      document
+        .getElementById("download-txt-btn")
+        .addEventListener("click", () => {
+          if (!lastJsonResult || !lastJsonResult.metrics) return;
+          const metrics = lastJsonResult.metrics;
+          let txt = `MRCP Engine Analysis Report\n===========================\n\n`;
+          txt += `Overview:\n`;
+          txt += `- Nodes: ${metrics.nodes || 0}\n`;
+          txt += `- Edges: ${metrics.edges || 0}\n`;
+          txt += `- Modules: ${metrics.modules || 0}\n`;
+          txt += `- Files: ${metrics.files || 0}\n`;
+          txt += `- Max Complexity: ${metrics.maxComplexity || 0}\n\n`;
+
+          if (metrics.topByDegree) {
+            txt += `Top Connections:\n`;
+            metrics.topByDegree.forEach(
+              (t) => (txt += `- ${t.label}: ${t.degree}\n`),
+            );
+          }
+          if (metrics.hotspots) {
+            txt += `\nHotspots:\n`;
+            metrics.hotspots.forEach(
+              (h) => (txt += `- ${h.label}: Complexity ${h.complexity}\n`),
+            );
+          }
+          downloadFile(txt, `mrcp-report-${Date.now()}.txt`, "text/plain");
+        });
+
+      // Actions: Baixar MD
+      document
+        .getElementById("download-md-btn")
+        .addEventListener("click", () => {
+          if (!lastJsonResult || !lastJsonResult.metrics) return;
+          const metrics = lastJsonResult.metrics;
+          let md = `# MRCP Engine Analysis Report\n\n`;
+          md += `## Overview\n\n`;
+          md += `| Metric | Value |\n|---|---|\n`;
+          md += `| Nodes | ${metrics.nodes || 0} |\n`;
+          md += `| Edges | ${metrics.edges || 0} |\n`;
+          md += `| Modules | ${metrics.modules || 0} |\n`;
+          md += `| Files | ${metrics.files || 0} |\n`;
+          md += `| Max Complexity | ${metrics.maxComplexity || 0} |\n\n`;
+
+          if (metrics.topByDegree && metrics.topByDegree.length > 0) {
+            md += `## Top Connections\n\n`;
+            metrics.topByDegree.forEach(
+              (t) => (md += `- **${t.label}**: ${t.degree}\n`),
+            );
+          }
+          if (metrics.hotspots && metrics.hotspots.length > 0) {
+            md += `\n## Hotspots\n\n`;
+            metrics.hotspots.forEach(
+              (h) => (md += `- **${h.label}**: Complexity ${h.complexity}\n`),
+            );
+          }
+          downloadFile(md, `mrcp-report-${Date.now()}.md`, "text/markdown");
+        });
+
+      // Actions: Baixar Relatório HTML (Grafo Animado)
+      document
+        .getElementById("download-graph-btn")
+        .addEventListener("click", () => {
+          if (!lastJsonResult || !lastJsonResult.nodes) return;
+          const nodesArr = lastJsonResult.nodes.map((n) => ({
+            id: n.id,
+            label: n.id.split("/").pop(),
+            group: n.kind || "unknown",
+          }));
+          const edgesArr = (lastJsonResult.edges || []).map((e) => ({
+            from: e.source,
+            to: e.target,
+            title: e.kind,
+          }));
+          const metrics = lastJsonResult.metrics || {};
+
+          const topsHtml = (metrics.topByDegree || [])
+            .map(
+              (t) =>
+                `<li>${t.label} <span style="color:#3b82f6">(${t.degree})</span></li>`,
+            )
+            .join("");
+          const hotspotsHtml = (metrics.hotspots || [])
+            .map(
+              (h) =>
+                `<li>${h.label} <span style="color:#ef4444">(${h.complexity})</span></li>`,
+            )
+            .join("");
+
+          const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MRCP Graph Report</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: 'Inter', sans-serif; background: #09090b; color: #ededed; overflow: hidden; }
+    #mynetwork { flex: 1; height: 100vh; background-image: radial-gradient(circle at 50% 50%, rgba(39, 39, 42, 0.5) 0%, transparent 60%); }
+    #sidebar { width: 340px; background: #18181b; border-left: 1px solid #27272a; padding: 24px; overflow-y: auto; box-shadow: -4px 0 24px rgba(0,0,0,0.5); z-index: 10; }
+    h2 { font-size: 1.25rem; color: #fff; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 1px solid #27272a; }
+    h3 { font-size: 0.95rem; margin-top: 24px; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em;}
+    .stat { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .stat-label { color: #a1a1aa; }
+    .stat-value { font-weight: 600; color: #fff; }
+    .list { list-style: none; padding: 0; margin: 0; }
+    .list li { margin-bottom: 8px; font-size: 0.85rem; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid #27272a; border-radius: 6px; display: flex; justify-content: space-between;}
+  </style>
+</head>
+<body>
+<div id="mynetwork"></div>
+<div id="sidebar">
+  <h2>Relatório Estrutural</h2>
+  <div class="stat"><span class="stat-label">Total de Nós</span><span class="stat-value">${metrics.nodes || 0}</span></div>
+  <div class="stat"><span class="stat-label">Arestas</span><span class="stat-value">${metrics.edges || 0}</span></div>
+  <div class="stat"><span class="stat-label">Módulos</span><span class="stat-value">${metrics.modules || 0}</span></div>
+  <div class="stat"><span class="stat-label">Arquivos</span><span class="stat-value">${metrics.files || 0}</span></div>
+  <div class="stat"><span class="stat-label">Grau Médio</span><span class="stat-value">${metrics.avgDegree || 0}</span></div>
+  <div class="stat"><span class="stat-label">Complexidade Max</span><span class="stat-value">${metrics.maxComplexity || 0}</span></div>
+  
+  <h3>Nós Mais Conectados</h3>
+  <ul class="list">${topsHtml || "<li>Nenhum dado</li>"}</ul>
+  
+  <h3>Hotspots (Complexos)</h3>
+  <ul class="list">${hotspotsHtml || "<li>Nenhum dado</li>"}</ul>
+</div>
+<script type="text/javascript">
+  const nodes = new vis.DataSet(${JSON.stringify(nodesArr)});
+  const edges = new vis.DataSet(${JSON.stringify(edgesArr)});
+  const container = document.getElementById('mynetwork');
+  const data = { nodes: nodes, edges: edges };
+  const options = {
+    nodes: { 
+        shape: 'dot', 
+        size: 12, 
+        font: { color: '#a1a1aa', size: 12, face: 'Inter' },
+        borderWidth: 2,
+        color: { border: '#27272a', background: '#3b82f6', highlight: { border: '#fff', background: '#60a5fa' } }
+    },
+    edges: { 
+        color: { color: '#3f3f46', highlight: '#ffffff' }, 
+        smooth: { type: 'continuous' } 
+    },
+    physics: {
+      forceAtlas2Based: { gravitationalConstant: -30, centralGravity: 0.005, springLength: 200, springConstant: 0.1 },
+      maxVelocity: 50,
+      solver: 'forceAtlas2Based',
+      timestep: 0.35,
+      stabilization: { iterations: 150 }
+    },
+    interaction: { hover: true, tooltipDelay: 200 }
+  };
+  new vis.Network(container, data, options);
+<\/script>
+</body>
+</html>`;
+          downloadFile(html, `mrcp-graph-${Date.now()}.html`, "text/html");
+        });
     </script>
   </body>
 </html>

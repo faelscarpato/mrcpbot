@@ -38,7 +38,7 @@ export default async function handler(req: any, res: any) {
   if (req.method === "GET") {
     return res.status(200).json({
       name: "mrcp-engine",
-      version: "2.5.0",
+      version: "2.6.0",
       description:
         "Machine-Readable Context Protocol Engine — Structural intelligence for AI agents",
       protocol: "MCP/Streamable-HTTP",

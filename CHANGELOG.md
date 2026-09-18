@@ -16,11 +16,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 
 - Full 13-tool diagnostic suite (`mrcp_run_full_repository_suite`) with parallel execution and consolidated executive report
+- Deterministic Decision Plane (**Mutation Gate**): `POST /api/mutation-gate` and `mrcp_gate_change` with secret redaction, AST-driven complexity budgets, and test coverage gates
+- Autonomous **Structural RAG** engine: `POST /api/structural-rag` and `mrcp_structural_rag_pipeline` extracting compact micro-contracts (< 600 tokens) with SHA-256 provenance
+- **Ephemeral Session Memory** with Supabase (24h TTL): `mrcp_fetch_memory(session_id)` and automatic instructional session footers
 - Document intelligence for non-code repositories (`mrcp_document_analyzer`) — CSV, TSV, TXT, MD, DOCX, XLSX, XLS, PDF, JSON, YAML, XML, LOG
 - Native VS Code / Cursor / Windsurf extension (`apps/vscode`) with sidebar, MRCP Cockpit dashboard, inline CodeLens, and AI Context Packer
+- Native Google Chrome Side Panel extension (Manifest V3) with automatic GitHub/GitLab repository detection
 - `npx mrcp-engine setup` — one-command auto-configuration across 10 IDEs/AI clients
 - Web search & scraping tool set (`mrcp_web_search`, `mrcp_web_scrape`, `mrcp_web_smart_search`)
-- Résumé/HR triage tool set (`mrcp_triage_parse_resume`, `mrcp_triage_score_candidate`, `mrcp_triage_generate_hr_report`)
+
+### Removed & Security
+
+- Removed legacy CapyMind voice assistant / Gemini LLM runtime (`api/v2/cognitive/`, `src/executors/llmExecutor.ts`) restoring strict zero-LLM analytical core
+- Sanitized `.env.example` template removing hardcoded Supabase keys in public VCS
+- Added Row Level Security (RLS) and pg_cron TTL cleanup migration for `mrcp_ast_sessions`
 
 ### Notes
 

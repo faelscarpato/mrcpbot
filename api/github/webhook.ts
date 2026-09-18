@@ -6,7 +6,12 @@ const webhooks = new Webhooks({
   secret: process.env.GITHUB_WEBHOOK_SECRET || "",
 });
 
-webhooks.on("push", async ({ payload }) => {
+interface WebhookPushPayload {
+  installation?: { id: number };
+  repository: { full_name: string };
+}
+
+webhooks.on("push", async ({ payload }: { payload: WebhookPushPayload }) => {
   const installationId = payload.installation?.id;
   const repositoryName = payload.repository.full_name;
 

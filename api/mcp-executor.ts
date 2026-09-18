@@ -1,4 +1,8 @@
 import { saveEndpointOutput } from "../packages/core/lib/cache.js";
+import {
+  saveAstSession,
+  fetchAstSession,
+} from "../packages/core/lib/supabase/client.js";
 
 export async function executeTool(toolName: string, args: any): Promise<any> {
   // Core Engine Tools
@@ -20,8 +24,23 @@ export async function executeTool(toolName: string, args: any): Promise<any> {
         maxFiles: 2000,
       });
       saveEndpointOutput(toolName, repoUrl, result);
+
+      let footer = "";
+      try {
+        const sessionId = await saveAstSession(repoUrl, result);
+        if (sessionId) {
+          footer = `\n\n---\nContexto arquitetural salvo temporariamente (TTL: 24h). ID da Sessão: ${sessionId}. Para consultas futuras sobre esta arquitetura, não reexecute o parser. Utilize exclusivamente a ferramenta mrcp_fetch_memory(session_id).`;
+        }
+      } catch (err: any) {
+        console.warn(
+          `[Supabase Memory] Falha ao persistir sessão efêmera: ${err?.message}`,
+        );
+      }
+
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [
+          { type: "text", text: JSON.stringify(result, null, 2) + footer },
+        ],
       };
     } catch (error: any) {
       return {
@@ -91,8 +110,23 @@ export async function executeTool(toolName: string, args: any): Promise<any> {
         repoUrl,
         taskContext: args?.taskContext,
       });
+
+      let footer = "";
+      try {
+        const sessionId = await saveAstSession(repoUrl, result);
+        if (sessionId) {
+          footer = `\n\n---\nContexto arquitetural salvo temporariamente (TTL: 24h). ID da Sessão: ${sessionId}. Para consultas futuras sobre esta arquitetura, não reexecute o parser. Utilize exclusivamente a ferramenta mrcp_fetch_memory(session_id).`;
+        }
+      } catch (err: any) {
+        console.warn(
+          `[Supabase Memory] Falha ao persistir sessão efêmera: ${err?.message}`,
+        );
+      }
+
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [
+          { type: "text", text: JSON.stringify(result, null, 2) + footer },
+        ],
       };
     } catch (error: any) {
       return {
@@ -100,6 +134,52 @@ export async function executeTool(toolName: string, args: any): Promise<any> {
           {
             type: "text",
             text: `Error executing full repository diagnostic suite: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  if (toolName === "mrcp_fetch_memory") {
+    const sessionId = String(args?.session_id || args?.sessionId || "").trim();
+    if (!sessionId) {
+      return {
+        content: [
+          { type: "text", text: "Error: 'session_id' parameter is required." },
+        ],
+        isError: true,
+      };
+    }
+    try {
+      const memory = await fetchAstSession(sessionId);
+      if (!memory) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Sessão expirada. Execute a ferramenta de análise original novamente.",
+            },
+          ],
+        };
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              typeof memory === "string"
+                ? memory
+                : JSON.stringify(memory, null, 2),
+          },
+        ],
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Erro ao recuperar memória da sessão: ${error.message}`,
           },
         ],
         isError: true,
@@ -718,6 +798,76 @@ export async function executeTool(toolName: string, args: any): Promise<any> {
           {
             type: "text",
             text: `Erro ao clonar página: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // --- Category: Governance & Mutation Gate ---
+  if (toolName === "mrcp_gate_change") {
+    const change = args?.change;
+    if (!change) {
+      return {
+        content: [
+          { type: "text", text: "Error: 'change' parameter is required." },
+        ],
+        isError: true,
+      };
+    }
+    try {
+      const { evaluateMutation } =
+        await import("../packages/core/lib/governance/gate.js");
+      const result = evaluateMutation(change, args?.policy || {}, {
+        checkRealComplexity: true,
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error evaluating mutation gate: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // --- Category: Structural RAG & Architecture ---
+  if (toolName === "mrcp_structural_rag_pipeline") {
+    const query = String(args?.query || "");
+    if (!query) {
+      return {
+        content: [
+          { type: "text", text: "Error: 'query' parameter is required." },
+        ],
+        isError: true,
+      };
+    }
+    try {
+      const { runStructuralRagPipeline } =
+        await import("../packages/core/lib/analysis/structural-rag.js");
+      const result = await runStructuralRagPipeline({
+        query,
+        targetStack: args?.targetStack,
+        repoUrl: args?.repoUrl,
+      });
+      const outputText =
+        JSON.stringify(result, null, 2) + (result.instructionalFooter || "");
+      return {
+        content: [{ type: "text", text: outputText }],
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error running structural RAG pipeline: ${error.message}`,
           },
         ],
         isError: true,

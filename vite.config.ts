@@ -1,15 +1,10 @@
 import { defineConfig } from "vite";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Removed UI plugin imports
 
 export default defineConfig({
   plugins: [],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    tsconfigPaths: true,
   },
   build: {
     rollupOptions: {
@@ -25,7 +20,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    host: "0.0.0.0",
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+    strictPort: !!process.env.PORT,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+    },
   },
 });

@@ -439,40 +439,6 @@ export const routeHandlers: Record<
       return res
         .status(400)
         .json({ status: "error", error_code: "MISSING_TARGET_URL" });
-
-    // 1. Tenta buscar direto da API remota mrcp-engine.vercel.app/api/code-health
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
-      const targetUrl = `https://mrcp-engine.vercel.app/api/code-health?repo=${encodeURIComponent(repoUrl)}`;
-      const remoteRes = await fetch(targetUrl, {
-        signal: controller.signal,
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "MRCP-Engine-Web/2.6",
-        },
-      });
-      clearTimeout(timeoutId);
-
-      if (remoteRes.ok) {
-        const json = (await remoteRes.json()) as any;
-        if (json && (json.code_health || json.status === "success")) {
-          return sendFormattedResponse(
-            req,
-            res,
-            "code_metrics_health_scorer",
-            repoUrl,
-            json,
-          );
-        }
-      }
-    } catch (err: any) {
-      console.warn(
-        "Aviso ao buscar da API remota mrcp-engine.vercel.app/api/code-health, acionando fallback local:",
-        err.message,
-      );
-    }
-
     const { calculateCodeHealth } =
       await import("../packages/core/lib/analysis/code-health.js");
     const result = await calculateCodeHealth({ repoUrl });
@@ -602,55 +568,10 @@ export const routeHandlers: Record<
       { status: "success", full_diagnostic: result },
     );
   },
-  "/api/full-analysis": async (req, res) => {
-    const repoUrl = req.query.repo || req.body?.repoUrl || req.body?.repo;
-    if (!repoUrl) {
-      return res
-        .status(400)
-        .json({ status: "error", error_code: "MISSING_TARGET_URL" });
-    }
-
-    // 1. Tenta buscar da API remota oficial mrcp-engine.vercel.app conforme solicitado
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-      const targetUrl = `https://mrcp-engine.vercel.app/api/full-analysis?repo=${encodeURIComponent(repoUrl)}`;
-      const remoteRes = await fetch(targetUrl, {
-        signal: controller.signal,
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "MRCP-Engine-Web/2.6",
-        },
-      });
-      clearTimeout(timeoutId);
-
-      if (remoteRes.ok) {
-        const json = (await remoteRes.json()) as any;
-        if (
-          json &&
-          (json.full_diagnostic || json.data || json.status === "success")
-        ) {
-          return sendFormattedResponse(
-            req,
-            res,
-            "full_repository_diagnostic_suite",
-            repoUrl,
-            json,
-          );
-        }
-      }
-    } catch (err: any) {
-      console.warn(
-        "Aviso ao buscar da API remota mrcp-engine.vercel.app, acionando fallback local:",
-        err.message,
-      );
-    }
-
-    // Fallback local caso a conexão externa falhe
-    return routeHandlers["/api/full-suite"](req, res);
-  },
+  "/api/full-analysis": async (req, res) =>
+    routeHandlers["/api/full-suite"](req, res),
   "/api/deep-analysis": async (req, res) =>
-    routeHandlers["/api/full-analysis"](req, res),
+    routeHandlers["/api/full-suite"](req, res),
 
   // 25. /api/clone & /api/page-cloner (PageCloner Pro Engine)
   "/api/clone": async (req, res) => {
@@ -708,129 +629,81 @@ export const routeHandlers: Record<
     return routeHandlers["/api/clone"](req, res);
   },
 
-  // 26.5 /api/ai/models (Listagem dinâmica de modelos por provedor: Gemini, OpenAI, Claude, Nvidia, Custom)
-  "/api/ai/models": async (req, res) => {
-    try {
-      const { listProviderModels } =
-        await import("../src/services/aiProviderService");
-      const provider = req.query?.provider || req.body?.provider || "gemini";
-      const apiKey = req.query?.apiKey || req.body?.apiKey;
-      const baseUrl = req.query?.baseUrl || req.body?.baseUrl;
-
-      const models = await listProviderModels({
-        provider,
-        apiKey,
-        baseUrl,
-      });
-
-      return res.status(200).json({
-        status: "success",
-        provider,
-        data: { models },
-        models,
-      });
-    } catch (err: any) {
-      console.error("Erro em /api/ai/models:", err);
-      return res.status(500).json({
+  // 27. /api/mutation-gate (Mutation Gate Governance)
+  "/api/mutation-gate": async (req, res) => {
+    const change = req.body?.change || req.body;
+    if (!change || !Array.isArray(change.files)) {
+      return res.status(400).json({
         status: "error",
-        message: err.message || "Erro ao consultar modelos do provedor.",
-      });
-    }
-  },
-
-  // 27. /api/chat (Multi-provider AI Chatbot - Curador de Custos & Arquiteto MRCP)
-  "/api/chat": async (req, res) => {
-    try {
-      const { processChatConversation } =
-        await import("../src/services/geminiChat");
-      const messages = req.body?.messages || [
-        {
-          role: "user",
-          content:
-            req.body?.prompt ||
-            req.query?.prompt ||
-            "Olá! Apresente o MRCP Engine e como ele economiza tokens e reduz custos para equipes de software.",
-        },
-      ];
-      const provider = req.body?.provider || req.query?.provider || "gemini";
-      const apiKey = req.body?.apiKey;
-      const baseUrl = req.body?.baseUrl;
-      const model = req.body?.model || req.query?.model;
-      const projectContext = req.body?.projectContext;
-      const fullDiagnostic = req.body?.fullDiagnostic;
-      const codeHealth = req.body?.codeHealth;
-      const startTimeMs = req.body?.startTimeMs;
-
-      const result = await processChatConversation({
-        messages,
-        provider,
-        apiKey,
-        baseUrl,
-        model,
-        projectContext,
-        fullDiagnostic,
-        codeHealth,
-        startTimeMs,
-      });
-
-      return res.status(200).json({
-        status: "success",
-        data: result,
-      });
-    } catch (err: any) {
-      console.error("Erro em /api/chat:", err);
-      return res.status(500).json({
-        status: "error",
-        error_code: "CHAT_ERROR",
+        error_code: "CHANGE_INVALID",
         message:
-          err.message || "Erro ao processar conversa com o provedor de IA.",
+          "O payload deve conter 'change.files' ou 'files' como array de arquivos modificados.",
       });
     }
-  },
 
-  // 28. /api/benchmark (Calculadora e Auditor de ROI: Sem MRCP vs Com MRCP)
-  "/api/benchmark": async (req, res) => {
     try {
-      const { calculateBenchmark } =
-        await import("../src/services/roiBenchmark");
-      const repo = req.query?.repo || req.body?.repo || req.body?.repoUrl;
-      const filesCount =
-        Number(req.query?.filesCount || req.body?.filesCount) || 45;
-      const totalLines =
-        Number(req.query?.totalLines || req.body?.totalLines) || 6800;
-      const totalBytes =
-        Number(req.query?.totalBytes || req.body?.totalBytes) || 240000;
-      const functionsCount =
-        Number(req.query?.functionsCount || req.body?.functionsCount) || 160;
-      const importsCount =
-        Number(req.query?.importsCount || req.body?.importsCount) || 95;
-      const turnsPerTask = Number(req.query?.turns || req.body?.turns) || 8;
-      const tier = req.query?.tier || req.body?.tier || "frontier";
-
-      const report = calculateBenchmark(
-        {
-          filesCount,
-          totalLines,
-          totalBytes,
-          functionsCount,
-          importsCount,
-          repoName: repo || "Repositório Analisado",
-        },
-        turnsPerTask,
-        tier,
-      );
-
-      return res.status(200).json({
-        status: "success",
-        data: report,
+      const { evaluateMutation } =
+        await import("../packages/core/lib/governance/gate.js");
+      const policy = req.body?.policy || {};
+      const result = evaluateMutation(change, policy, {
+        checkRealComplexity: true,
       });
+
+      return sendFormattedResponse(
+        req,
+        res,
+        "mutation_gate",
+        change.repo || "local",
+        result,
+      );
     } catch (err: any) {
-      console.error("Erro em /api/benchmark:", err);
       return res.status(500).json({
         status: "error",
-        error_code: "BENCHMARK_ERROR",
+        error_code: "GATE_EVALUATION_FAILED",
         message: err.message,
       });
     }
   },
+  "/api/gate": async (req, res) =>
+    routeHandlers["/api/mutation-gate"](req, res),
+
+  // 28. /api/structural-rag (Structural RAG Auto-Architect)
+  "/api/structural-rag": async (req, res) => {
+    const query =
+      req.query.query || req.query.q || req.body?.query || req.body?.q;
+    if (!query) {
+      return res.status(400).json({
+        status: "error",
+        error_code: "MISSING_QUERY",
+        message: "Forneça o parâmetro 'query' ou 'q'.",
+      });
+    }
+
+    try {
+      const { runStructuralRagPipeline } =
+        await import("../packages/core/lib/analysis/structural-rag.js");
+      const result = await runStructuralRagPipeline({
+        query: String(query),
+        targetStack:
+          req.query.stack || req.body?.targetStack || req.body?.stack,
+        repoUrl: req.query.repo || req.body?.repoUrl || req.body?.repo,
+      });
+
+      return sendFormattedResponse(
+        req,
+        res,
+        "structural_rag",
+        result.selectedRepo?.url || "structural-rag",
+        result,
+      );
+    } catch (err: any) {
+      return res.status(500).json({
+        status: "error",
+        error_code: "STRUCTURAL_RAG_FAILED",
+        message: err.message,
+      });
+    }
+  },
+  "/api/rag": async (req, res) =>
+    routeHandlers["/api/structural-rag"](req, res),
 };
